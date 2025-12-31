@@ -1,3 +1,4 @@
+// app/page.tsx
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
@@ -5,19 +6,39 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 
-// Import các thành phần con và dữ liệu (CHÚ Ý: Dùng TopNav)
+// Import các thành phần con và dữ liệu
 import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
 import Modal from "@/components/Modal";
-import { translations, projectsData, certData, galleryData, Lang } from "@/lib/data";
+import { translations, projectsData, certData, galleryData, Lang } from "@/lib/data";   
+// Import hàm lấy dữ liệu từ Server
+import { getPostsByTag } from "@/lib/actions";
 
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", desc: "", tech: "", images: [] as string[], link: "" });
   
+  // State để chứa bài viết từ Database
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbUniProjects, setDbUniProjects] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbPersonalProjects, setDbPersonalProjects] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbItEvents, setDbItEvents] = useState<any[]>([]);
+
   const typeWriterRef = useRef<HTMLSpanElement>(null);
-  const t = translations[currentLang]; // Lấy dữ liệu dịch hiện tại
+  const t = translations[currentLang]; 
+
+  // --- FETCH DỮ LIỆU TỪ DB ---
+  useEffect(() => {
+    // Lấy bài viết cho mục University Projects
+    getPostsByTag("uni_projects").then(setDbUniProjects);
+    // Lấy bài viết cho mục Personal Projects
+    getPostsByTag("personal_projects").then(setDbPersonalProjects);
+    // Lấy bài viết cho mục IT Events
+    getPostsByTag("it_events").then(setDbItEvents);
+  }, []);
 
   // Logic tính tuổi
   const calculateAge = () => {
@@ -74,6 +95,16 @@ export default function Home() {
             images: data[currentLang].images || [], link: data[currentLang].link || ""
         });
         setModalOpen(true);
+    }
+  };
+
+  // Hàm Helper để lấy ảnh đại diện từ JSON chuỗi
+  const getCoverImage = (jsonString: string) => {
+    try {
+        const arr = JSON.parse(jsonString);
+        return arr.length > 0 ? arr[0] : "https://placehold.co/300x200/000/00ff41?text=No+Image";
+    } catch {
+        return "https://placehold.co/300x200/000/00ff41?text=Error";
     }
   };
 
@@ -198,29 +229,53 @@ export default function Home() {
 
         <section id="projects" className="content-section">
             <h2>{t.sec_proj}</h2>
+            {/* --- UNIVERSITY PROJECTS --- */}
             <h3 className="carousel-title">{t.cat_uni_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="uni-projects">
+                     {/* 1. Dữ liệu tĩnh cũ */}
                      {['uni_1', 'uni_2'].map(id => (
                         <div key={id} className="card" onClick={() => openModal('project', id)}>
                             <img src="https://placehold.co/300x200/000/00ff41?text=Uni+Project" alt="Project" />
                             <div className="card-info"><h4>{projectsData[id][currentLang].title}</h4><p>{t.lbl_click_detail}</p></div>
                         </div>
                     ))}
+                    {/* 2. Dữ liệu ĐỘNG từ Database (Blog) */}
+                    {dbUniProjects.map((post) => (
+                        <a key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                            <div className="card-info">
+                                <h4>{post.title}</h4>
+                                <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
+                            </div>
+                        </a>
+                    ))}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('uni-projects', 1)} >&#10095;</button>
             </div>
             
+            {/* --- PERSONAL PROJECTS --- */}
             <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_personal_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="personal-projects">
+                     {/* 1. Dữ liệu tĩnh cũ */}
                      {['per_1', 'per_2'].map(id => (
                         <div key={id} className="card" onClick={() => openModal('project', id)}>
                             <img src="https://placehold.co/300x200/000/fff?text=Personal+Project" alt="Project" />
                             <div className="card-info"><h4>{projectsData[id][currentLang].title}</h4><p>{t.lbl_click_detail}</p></div>
                         </div>
+                    ))}
+                    {/* 2. Dữ liệu ĐỘNG từ Database */}
+                    {dbPersonalProjects.map((post) => (
+                        <a key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                            <div className="card-info">
+                                <h4>{post.title}</h4>
+                                <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
+                            </div>
+                        </a>
                     ))}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('personal-projects', 1)} >&#10095;</button>
@@ -233,18 +288,29 @@ export default function Home() {
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button>
                 <div className="carousel-container" id="it-gallery">
+                     {/* 1. Dữ liệu tĩnh cũ */}
                      {['it_1', 'it_2'].map(id => (
                         <div key={id} className="card" onClick={() => openModal('gallery', id)}>
                             <img src="https://placehold.co/300x200/001100/00ff41?text=Event" alt="Event" />
                             <div className="card-info"><h4>{galleryData[id][currentLang].title}</h4><p>{t.lbl_view_album}</p></div>
                         </div>
                     ))}
+                    {/* 2. Dữ liệu ĐỘNG từ Database */}
+                    {dbItEvents.map((post) => (
+                        <a key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                            <div className="card-info">
+                                <h4>{post.title}</h4>
+                                <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p>
+                            </div>
+                        </a>
+                    ))}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button>
             </div>
         </section>
         
-        {/* --- Thay thế toàn bộ đoạn section id="contact" cũ bằng đoạn này --- */}
+        {/* --- CONTACT (GIỮ NGUYÊN CODE BẠN VỪA SỬA) --- */}
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
             <h2>{t.sec_contact}</h2>
             <div className="profile-container">
