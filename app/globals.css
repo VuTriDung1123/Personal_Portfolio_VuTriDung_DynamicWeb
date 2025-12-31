@@ -1,8 +1,14 @@
+/* 1. Import Font phải luôn ở dòng đầu tiên */
 @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* 2. Cấu hình Tailwind v4 */
+@import "tailwindcss";
+
+@plugin "tailwindcss-animate";
+
+@theme {
+  --font-pixel: 'VT323', monospace;
+}
 
 /* --- CẤU HÌNH GIAO DIỆN CHUNG --- */
 :root {
@@ -11,7 +17,7 @@
     --accent-color: #00ff41; 
     --secondary-color: #008f11;
     --nav-bg: rgba(10, 10, 10, 0.95);
-    --pixel-font: 'VT323', monospace;
+    --pixel-font: var(--font-pixel);
     --nav-height: 80px;
 }
 
@@ -73,7 +79,6 @@ nav#navbar {
     overflow: hidden;
 }
 .hero-img-large img { width: 100%; height: 100%; object-fit: cover; filter: contrast(1.1); }
-
 
 .content-section { padding: 50px 100px; border-left: 2px solid var(--secondary-color); margin: 50px 100px; background: rgba(255, 255, 255, 0.02); }
 .content-section h2 { color: var(--accent-color); margin-bottom: 20px; font-size: 40px; border-bottom: 1px dashed #333; display: inline-block; }
