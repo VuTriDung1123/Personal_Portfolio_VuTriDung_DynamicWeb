@@ -59,7 +59,10 @@ export const translations = {
     box_non_it_exp: "[ Non-IT Experience ]", exp_role_3: "Volunteer Club Manager", exp_desc_3: "> Leadership, event organizing.", exp_role_4: "Freelance Translator", exp_desc_4: "> En-Vi document translation.",
     sec_proj: "// Projects", cat_uni_proj: "[ University Projects ]", cat_personal_proj: "[ Personal Projects ]",
     sec_gallery: "// Gallery", cat_it_event: "[ IT Events / Hackathon ]", cat_life: "[ Life & Activities ]",
-    sec_contact: "// Contact Info", box_contact_direct: "[ Direct Contact ]", box_social: "[ Social Network ]",
+    sec_contact: "// Contact Info", box_contact_direct: "[ Direct Contact ]", 
+    box_social: "[ Social Network ]",
+    lbl_fb: "Facebook:",   // <--- Thêm dòng này
+    lbl_in: "LinkedIn:",   // <--- Thêm dòng này
     lbl_loading: "Loading...", lbl_click_detail: "Click for details", lbl_view_album: "View Album",
     typewriter_texts: ["Software Engineer", "Web Developer", "Tech Enthusiast"]
   },
@@ -82,6 +85,8 @@ export const translations = {
     sec_proj: "// Dự án", cat_uni_proj: "[ Dự án trường ]", cat_personal_proj: "[ Dự án cá nhân ]",
     sec_gallery: "// Thư viện ảnh", cat_it_event: "[ Sự kiện IT ]", cat_life: "[ Hoạt động ]",
     sec_contact: "// Liên hệ", box_contact_direct: "[ Liên hệ ]", box_social: "[ Mạng xã hội ]",
+    lbl_fb: "Facebook:",   // <--- Thêm dòng này
+    lbl_in: "LinkedIn:",   // <--- Thêm dòng này
     lbl_loading: "Đang tính...", lbl_click_detail: "Nhấn xem chi tiết", lbl_view_album: "Xem album ảnh",
     typewriter_texts: ["Kỹ sư phần mềm", "Lập trình viên Web", "Người yêu công nghệ"]
   },
@@ -104,6 +109,8 @@ export const translations = {
     sec_proj: "// 制作物", cat_uni_proj: "[ 大学課題 ]", cat_personal_proj: "[ 個人開発 ]",
     sec_gallery: "// ギャラリー", cat_it_event: "[ ITイベント ]", cat_life: "[ 活動 ]",
     sec_contact: "// 連絡先", box_contact_direct: "[ 連絡先 ]", box_social: "[ SNS ]",
+    lbl_fb: "Facebook:",   // <--- Thêm dòng này
+    lbl_in: "LinkedIn:",   // <--- Thêm dòng này
     lbl_loading: "計算中...", lbl_click_detail: "詳細", lbl_view_album: "アルバム",
     typewriter_texts: ["エンジニア", "Web開発者", "技術愛好家"]
   }
