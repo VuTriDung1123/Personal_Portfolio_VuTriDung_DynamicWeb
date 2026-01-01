@@ -1,7 +1,7 @@
 "use client";
 
 import { createPost, checkAdmin, getAllPosts, deletePost } from "@/lib/actions";
-import { useState, useEffect } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import MatrixRain from "@/components/MatrixRain";
 
 export default function AdminPage() {
@@ -9,6 +9,7 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [posts, setPosts] = useState<any[]>([]);
+  const [selectedFiles, setSelectedFiles] = useState<string[]>([]);
 
   useEffect(() => {
     if (isLoggedIn) {
@@ -29,6 +30,7 @@ export default function AdminPage() {
     alert("SYSTEM: Post created successfully.");
     const form = document.getElementById("createForm") as HTMLFormElement;
     if(form) form.reset();
+    setSelectedFiles([]); 
   };
 
   const handleDelete = async (id: string) => {
@@ -39,12 +41,18 @@ export default function AdminPage() {
     }
   }
 
+  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+        const fileNames = Array.from(e.target.files).map(file => file.name);
+        setSelectedFiles(fileNames);
+    }
+  };
+
   // --- LOGIN UI ---
   if (!isLoggedIn) {
     return (
       <main className="h-screen flex items-center justify-center relative overflow-hidden bg-black font-mono">
         <MatrixRain />
-        {/* SỬA LỖI 1: w-[400px] -> w-100 */}
         <form action={handleLogin} className="z-10 bg-[rgba(10,10,10,0.95)] border border-[#00ff41] p-10 flex flex-col gap-6 w-100 shadow-[0_0_20px_#00ff41]">
             <h1 className="text-[#00ff41] text-3xl text-center font-bold tracking-widest">SYSTEM LOGIN</h1>
             <input name="username" type="text" placeholder="admin" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none" />
@@ -67,13 +75,11 @@ export default function AdminPage() {
                 <h1 className="text-2xl text-[#00ff41] mb-4 border-b border-[#333] pb-2 uppercase">Create New Log</h1>
                 <form id="createForm" action={handleCreate} className="flex flex-col gap-4 bg-[rgba(20,20,20,0.8)] p-6 border border-[#333]">
                     
-                    {/* Title */}
                     <div>
                         <label className="text-[#00ff41] text-xs mb-1 block">TITLE:</label>
                         <input type="text" name="title" required className="w-full p-2 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white" placeholder="Enter title..." />
                     </div>
 
-                    {/* Tag & Language */}
                     <div className="flex gap-4">
                         <div className="flex-1">
                             <label className="text-[#00ff41] text-xs mb-1 block">CATEGORY:</label>
@@ -82,12 +88,14 @@ export default function AdminPage() {
                                 <option value="uni_projects">University Projects</option>
                                 <option value="personal_projects">Personal Projects</option>
                                 <option value="it_events">IT Events</option>
+                                {/* ĐÃ THÊM 2 MỤC MỚI Ở ĐÂY */}
+                                <option value="lang_certs">Language Certificates</option>
+                                <option value="tech_certs">Technical Certificates</option>
                             </select>
                         </div>
                         
                         <div className="flex-1">
                              <label className="text-[#00ff41] text-xs mb-1 block">LANGUAGE:</label>
-                             {/* SỬA LỖI 2: h-[38px] -> h-9.5 */}
                              <div className="flex gap-4 items-center h-9.5">
                                 <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41]">
                                     <input type="radio" name="language" value="vi" defaultChecked className="accent-[#00ff41]" /> VI
@@ -102,7 +110,6 @@ export default function AdminPage() {
                         </div>
                     </div>
 
-                    {/* Content */}
                     <div>
                         <label className="text-[#00ff41] text-xs mb-1 block">CONTENT:</label>
                         <textarea name="content" rows={8} required className="w-full p-2 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white" placeholder="Markdown supported..."></textarea>
@@ -111,7 +118,29 @@ export default function AdminPage() {
                     {/* Image Upload */}
                     <div>
                         <label className="text-[#00ff41] text-xs mb-1 block">IMAGES (Local):</label>
-                        <input type="file" name="images" multiple accept="image/*" className="w-full text-xs text-gray-400 file:bg-[#333] file:text-white file:border-0 file:py-1 file:px-2 file:mr-2 hover:file:bg-[#00ff41] hover:file:text-black cursor-pointer" />
+                        <div className="border border-[#333] p-4 bg-black">
+                            <input 
+                                type="file" 
+                                name="images" 
+                                multiple 
+                                accept="image/*" 
+                                onChange={handleFileChange}
+                                className="w-full text-xs text-gray-400 file:bg-[#333] file:text-white file:border-0 file:py-2 file:px-4 file:mr-4 hover:file:bg-[#00ff41] hover:file:text-black cursor-pointer" 
+                            />
+                            {/* Hiển thị danh sách file đã chọn (Đã sửa lỗi comment //) */}
+                            {selectedFiles.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-[#333]">
+                                    <p className="text-[#00ff41] text-xs mb-2 uppercase">{`// Selected Files (${selectedFiles.length}):`}</p>
+                                    <ul className="text-xs text-gray-400 font-mono space-y-1 max-h-32 overflow-y-auto">
+                                        {selectedFiles.map((name, i) => (
+                                            <li key={i} className="flex items-center gap-2">
+                                                <span className="text-[#00ff41]">&gt;</span> {name}
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            )}
+                        </div>
                     </div>
 
                     <button disabled={loading} type="submit" className="bg-[#00ff41] text-black font-bold p-3 mt-2 hover:bg-white transition-all uppercase tracking-widest text-sm">
@@ -123,7 +152,6 @@ export default function AdminPage() {
             {/* CỘT PHẢI: LIST */}
             <div>
                 <h1 className="text-2xl text-red-500 mb-4 border-b border-[#333] pb-2 uppercase">Manage Database</h1>
-                {/* SỬA LỖI 3: h-[600px] -> h-150 */}
                 <div className="bg-[rgba(20,20,20,0.8)] border border-[#333] h-150 overflow-y-auto p-4 custom-scrollbar">
                     {posts.map((post) => (
                         <div key={post.id} className="mb-3 p-3 border border-[#333] hover:border-[#00ff41] bg-black transition-all">
