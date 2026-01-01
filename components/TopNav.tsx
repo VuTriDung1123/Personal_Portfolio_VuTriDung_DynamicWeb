@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { usePathname } from "next/navigation"; // 1. Import cái này để biết đang ở trang nào
 import { Lang } from "@/lib/data";
 
 interface TopNavProps {
@@ -13,6 +14,9 @@ interface TopNavProps {
 
 export default function TopNav({ t, currentLang, setCurrentLang }: TopNavProps) {
   const getNavText = (key: string) => t[key] || key;
+  
+  // 2. Lấy đường dẫn hiện tại (ví dụ: "/", "/blog", "/blog/123")
+  const pathname = usePathname();
 
   const navItems = [
     'home', 'about', 'profile', 'certificates', 'career', 
@@ -23,19 +27,13 @@ export default function TopNav({ t, currentLang, setCurrentLang }: TopNavProps) 
 
   return (
     <nav id="navbar" style={{
-        // SỬA LỖI: Dùng 1fr - auto - 1fr để cân bằng tự động
         display: 'grid',
         gridTemplateColumns: '1fr auto 1fr', 
         alignItems: 'center',
-        
-        // Dùng left/right: 0 thay vì width: 100% để tránh bị tràn màn hình khi có padding
         position: 'fixed',
-        top: 0, 
-        left: 0,
-        right: 0, 
-        
-        padding: '10px 40px', // Khoảng cách an toàn từ lề
-        zIndex: 9999, // Tăng z-index cao nhất để không bị che
+        top: 0, left: 0, right: 0, 
+        padding: '10px 40px',
+        zIndex: 9999,
         backgroundColor: 'rgba(0,0,0,0.95)', 
         borderBottom: '1px solid #00ff41',
         boxShadow: '0 2px 10px rgba(0,255,65,0.1)'
@@ -63,31 +61,57 @@ export default function TopNav({ t, currentLang, setCurrentLang }: TopNavProps) 
         </div>
       </div>
 
-      {/* 2. GIỮA: Menu (Tự động canh giữa màn hình nhờ Grid) */}
+      {/* 2. GIỮA: Menu */}
       <ul className="nav-links" style={{ 
           display: 'flex', justifyContent: 'center', gap: '20px', 
           listStyle: 'none', margin: 0, padding: 0 
       }}>
-        {navItems.map(item => (
-          <li key={item}>
-            {item === 'blog' ? (
-               <Link href="/blog" style={{ textDecoration: 'none', color: '#e0e0e0', textTransform: 'uppercase', fontSize: '0.9rem', fontWeight: 500, padding: '5px' }}>
-                 {getNavText('nav_blog')}
-               </Link>
-            ) : (
-               <a href={`#${item}`} className={item === 'home' ? 'active' : ''} style={{ textDecoration: 'none', color: '#e0e0e0', textTransform: 'uppercase', fontSize: '0.9rem', padding: '5px' }}>
-                 {getNavText(`nav_${
+        {navItems.map(item => {
+            // --- LOGIC XỬ LÝ ĐƯỜNG DẪN ---
+            let href = "";
+            let label = "";
+
+            if (item === 'blog') {
+                href = "/blog";
+                label = getNavText('nav_blog');
+            } else if (item === 'home') {
+                href = "/";
+                label = getNavText('nav_home');
+            } else {
+                // Các mục còn lại (About, Contact...)
+                label = getNavText(`nav_${
                     item === 'certificates' ? 'cert' : 
                     (item === 'projects' ? 'proj' : 
                     (item === 'experience' ? 'exp' : item))
-                 }`)}
-               </a>
-            )}
-          </li>
-        ))}
+                }`);
+
+                // Nếu đang ở trang chủ (pathname === "/") -> dùng #id (scroll mượt)
+                // Nếu đang ở trang khác (pathname !== "/") -> dùng /#id (nhảy về trang chủ rồi scroll)
+                href = pathname === "/" ? `#${item}` : `/#${item}`;
+            }
+
+            return (
+                <li key={item}>
+                    <Link 
+                        href={href} 
+                        style={{ 
+                            textDecoration: 'none', 
+                            color: '#e0e0e0', 
+                            textTransform: 'uppercase', 
+                            fontSize: '0.9rem', 
+                            padding: '5px',
+                            fontWeight: (item === 'blog' && pathname.includes('/blog')) || (item === 'home' && pathname === '/') ? 'bold' : 'normal'
+                        }}
+                        className={item === 'home' && pathname === '/' ? 'active' : ''}
+                    >
+                        {label}
+                    </Link>
+                </li>
+            );
+        })}
       </ul>
 
-      {/* 3. PHẢI: Nút ngôn ngữ (Đảm bảo nằm gọn trong lề phải) */}
+      {/* 3. PHẢI: Nút ngôn ngữ */}
       <div className="nav-right" style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <div className="lang-switch" style={{ color: '#fff', backgroundColor: 'rgba(0,0,0,0.5)', padding: '5px 10px', borderRadius: '5px' }}>
           {(['en', 'vi', 'jp'] as const).map(lang => (
