@@ -1,46 +1,50 @@
-// app/page.tsx
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link"; // Import Link để chuyển trang
 
-// Import các thành phần con và dữ liệu
 import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
 import Modal from "@/components/Modal";
 import { translations, projectsData, certData, galleryData, Lang } from "@/lib/data";   
-// Import hàm lấy dữ liệu từ Server
-import { getPostsByTag } from "@/lib/actions";
+// Import đúng, không trùng lặp
+import { getPostsByTag, getAllPosts } from "@/lib/actions";
 
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", desc: "", tech: "", images: [] as string[], link: "" });
   
-  // State để chứa bài viết từ Database
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbUniProjects, setDbUniProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbPersonalProjects, setDbPersonalProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbItEvents, setDbItEvents] = useState<any[]>([]);
+  
+  // State mới cho Blog
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [latestPosts, setLatestPosts] = useState<any[]>([]);
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
   const t = translations[currentLang]; 
 
-  // --- FETCH DỮ LIỆU TỪ DB ---
   useEffect(() => {
-    // Lấy bài viết cho mục University Projects
     getPostsByTag("uni_projects").then(setDbUniProjects);
-    // Lấy bài viết cho mục Personal Projects
     getPostsByTag("personal_projects").then(setDbPersonalProjects);
-    // Lấy bài viết cho mục IT Events
     getPostsByTag("it_events").then(setDbItEvents);
+
+    // Lấy bài viết mới nhất
+    getAllPosts().then((posts) => {
+        if (posts && posts.length > 0) {
+            setLatestPosts(posts.slice(0, 3));
+        }
+    });
   }, []);
 
-  // Logic tính tuổi
   const calculateAge = () => {
     const birthDate = new Date("2005-11-23");
     const now = new Date();
@@ -54,7 +58,6 @@ export default function Home() {
     return `${years} Years, ${months} Months`;
   };
 
-  // Logic gõ chữ
   useEffect(() => {
     let phraseIndex = 0; let charIndex = 0; let isDeleting = false; let timeoutId: NodeJS.Timeout;
     const type = () => {
@@ -74,13 +77,11 @@ export default function Home() {
     return () => clearTimeout(timeoutId);
   }, [currentLang]);
 
-  // Logic cuộn Carousel
   const scrollCarousel = (id: string, direction: number) => {
     const container = document.getElementById(id);
     if (container) container.scrollBy({ left: direction * 300, behavior: 'smooth' });
   };
 
-  // Logic mở Modal
   const openModal = (type: 'project' | 'cert' | 'gallery', id: string) => {
     let data;
     if (type === 'project') data = projectsData[id];
@@ -98,7 +99,6 @@ export default function Home() {
     }
   };
 
-  // Hàm Helper để lấy ảnh đại diện từ JSON chuỗi
   const getCoverImage = (jsonString: string) => {
     try {
         const arr = JSON.parse(jsonString);
@@ -229,56 +229,87 @@ export default function Home() {
 
         <section id="projects" className="content-section">
             <h2>{t.sec_proj}</h2>
-            {/* --- UNIVERSITY PROJECTS --- */}
             <h3 className="carousel-title">{t.cat_uni_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="uni-projects">
-                     {/* 1. Dữ liệu tĩnh cũ */}
-                     {['uni_1', 'uni_2'].map(id => (
+                      {['uni_1', 'uni_2'].map(id => (
                         <div key={id} className="card" onClick={() => openModal('project', id)}>
                             <img src="https://placehold.co/300x200/000/00ff41?text=Uni+Project" alt="Project" />
                             <div className="card-info"><h4>{projectsData[id][currentLang].title}</h4><p>{t.lbl_click_detail}</p></div>
                         </div>
                     ))}
-                    {/* 2. Dữ liệu ĐỘNG từ Database (Blog) */}
                     {dbUniProjects.map((post) => (
-                        <a key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                        <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                             <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                             <div className="card-info">
                                 <h4>{post.title}</h4>
                                 <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
                             </div>
-                        </a>
+                        </Link>
                     ))}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('uni-projects', 1)} >&#10095;</button>
             </div>
             
-            {/* --- PERSONAL PROJECTS --- */}
             <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_personal_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="personal-projects">
-                     {/* 1. Dữ liệu tĩnh cũ */}
-                     {['per_1', 'per_2'].map(id => (
+                      {['per_1', 'per_2'].map(id => (
                         <div key={id} className="card" onClick={() => openModal('project', id)}>
                             <img src="https://placehold.co/300x200/000/fff?text=Personal+Project" alt="Project" />
                             <div className="card-info"><h4>{projectsData[id][currentLang].title}</h4><p>{t.lbl_click_detail}</p></div>
                         </div>
                     ))}
-                    {/* 2. Dữ liệu ĐỘNG từ Database */}
                     {dbPersonalProjects.map((post) => (
-                        <a key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                        <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                             <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                             <div className="card-info">
                                 <h4>{post.title}</h4>
                                 <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
                             </div>
-                        </a>
+                        </Link>
                     ))}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('personal-projects', 1)} >&#10095;</button>
+            </div>
+        </section>
+
+        {/* --- SECTION BLOG MỚI (Đã sửa lỗi Link và any) --- */}
+        <section id="blog" className="content-section">
+            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}>
+                <h2>{t.nav_blog}</h2>
+                <Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>
+                    {`View All >>>`}
+                </Link>
+            </div>
+
+            <div className="carousel-wrapper">
+                 <div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>
+                    {latestPosts.length > 0 ? (
+                        latestPosts.map((post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}>
+                                <img 
+                                    src={getCoverImage(post.images)} 
+                                    alt={post.title} 
+                                    style={{height: 160, width: '100%', objectFit: 'cover'}} 
+                                />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p style={{fontSize: '0.9rem', color: '#aaa', margin: '5px 0'}}>
+                                        {new Date(post.createdAt).toLocaleDateString()}
+                                    </p>
+                                    <p className="text-[#00ff41] text-xs">&gt;&gt; ACCESS LOG</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px'}}>
+                            [SYSTEM: NO LOGS FOUND]
+                        </div>
+                    )}
+                 </div>
             </div>
         </section>
 
@@ -288,37 +319,32 @@ export default function Home() {
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button>
                 <div className="carousel-container" id="it-gallery">
-                     {/* 1. Dữ liệu tĩnh cũ */}
-                     {['it_1', 'it_2'].map(id => (
+                      {['it_1', 'it_2'].map(id => (
                         <div key={id} className="card" onClick={() => openModal('gallery', id)}>
                             <img src="https://placehold.co/300x200/001100/00ff41?text=Event" alt="Event" />
                             <div className="card-info"><h4>{galleryData[id][currentLang].title}</h4><p>{t.lbl_view_album}</p></div>
                         </div>
                     ))}
-                    {/* 2. Dữ liệu ĐỘNG từ Database */}
                     {dbItEvents.map((post) => (
-                        <a key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                        <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                             <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                             <div className="card-info">
                                 <h4>{post.title}</h4>
                                 <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p>
                             </div>
-                        </a>
+                        </Link>
                     ))}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button>
             </div>
         </section>
         
-        {/* --- CONTACT (GIỮ NGUYÊN CODE BẠN VỪA SỬA) --- */}
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
             <h2>{t.sec_contact}</h2>
             <div className="profile-container">
-                {/* Cột Trái: Direct Contact */}
                 <div className="profile-box">
                     <h3>{t.box_contact_direct}</h3>
                     <ul className="profile-list">
-                        {/* Email - Có 2 dòng */}
                         <li style={{ alignItems: 'flex-start' }}>
                             <span className="label">Email:</span>
                             <div className="value">
@@ -326,8 +352,6 @@ export default function Home() {
                                 <div>- dungvutri2k5@gmail.com</div>
                             </div>
                         </li>
-                        
-                        {/* Phone - Có 2 dòng */}
                         <li style={{ alignItems: 'flex-start' }}>
                             <span className="label">Phone:</span>
                             <div className="value">
@@ -337,33 +361,20 @@ export default function Home() {
                         </li>
                     </ul>
                 </div>
-
-                {/* Cột Phải: Social Network */}
                 <div className="profile-box">
                     <h3>{t.box_social}</h3>
                     <ul className="profile-list">
-                        {/* LinkedIn */}
                         <li>
                             <span className="label">LinkedIn:</span> 
                             <a href="https://linkedin.com/in/dungvutri23112005" target="_blank" className="value link-hover">
                                 /dungvutri23112005
                             </a>
                         </li>
-
-                        {/* Github - Có 2 dòng */}
                         <li style={{ alignItems: 'flex-start' }}>
                             <span className="label">Github:</span>
                             <div className="value">
-                                <div>
-                                    <a href="https://github.com/VuTriDung1123" target="_blank" className="link-hover">
-                                        - /VuTriDung1123 (Main)
-                                    </a>
-                                </div>
-                                <div>
-                                    <a href="https://github.com/VuTriDung" target="_blank" className="link-hover">
-                                        - /VuTriDung
-                                    </a>
-                                </div>
+                                <div><a href="https://github.com/VuTriDung1123" target="_blank" className="link-hover">- /VuTriDung1123 (Main)</a></div>
+                                <div><a href="https://github.com/VuTriDung" target="_blank" className="link-hover">- /VuTriDung</a></div>
                             </div>
                         </li>
                     </ul>
