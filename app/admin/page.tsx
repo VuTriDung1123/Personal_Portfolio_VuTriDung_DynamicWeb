@@ -1,123 +1,151 @@
 "use client";
 
-import { createPost, checkAdmin } from "@/lib/actions";
-import { useState } from "react";
+import { createPost, checkAdmin, getAllPosts, deletePost } from "@/lib/actions";
+import { useState, useEffect } from "react";
 import MatrixRain from "@/components/MatrixRain";
 
 export default function AdminPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [loading, setLoading] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [posts, setPosts] = useState<any[]>([]);
 
-  // --- GIAO DIỆN ĐĂNG NHẬP (Login UI) ---
+  useEffect(() => {
+    if (isLoggedIn) {
+        getAllPosts().then(setPosts);
+    }
+  }, [isLoggedIn, loading]);
+
+  const handleLogin = async (formData: FormData) => {
+    const res = await checkAdmin(formData);
+    if (res.success) setIsLoggedIn(true);
+    else alert("ACCESS DENIED!");
+  };
+
+  const handleCreate = async (formData: FormData) => {
+    setLoading(true);
+    await createPost(formData);
+    setLoading(false);
+    alert("SYSTEM: Post created successfully.");
+    const form = document.getElementById("createForm") as HTMLFormElement;
+    if(form) form.reset();
+  };
+
+  const handleDelete = async (id: string) => {
+    if(confirm("DELETE LOG?")) {
+        setLoading(true);
+        await deletePost(id);
+        setLoading(false);
+    }
+  }
+
+  // --- LOGIN UI ---
   if (!isLoggedIn) {
     return (
-      <main className="h-screen flex items-center justify-center relative overflow-hidden bg-black">
+      <main className="h-screen flex items-center justify-center relative overflow-hidden bg-black font-mono">
         <MatrixRain />
-        <div className="z-10 bg-[rgba(10,10,10,0.9)] border-2 border-[#00ff41] p-10 flex flex-col gap-6 shadow-[0_0_30px_#00ff41] w-[400px] backdrop-blur-sm relative">
-            
-            <div className="absolute top-0 left-0 w-4 h-4 border-t-4 border-l-4 border-white -mt-1 -ml-1"></div>
-            <div className="absolute bottom-0 right-0 w-4 h-4 border-b-4 border-r-4 border-white -mb-1 -mr-1"></div>
-
-            <h1 className="text-[#00ff41] text-3xl font-mono text-center tracking-[5px] font-bold uppercase drop-shadow-[0_0_5px_#00ff41]">
-                System Login
-            </h1>
-            
-            <form action={async (formData) => {
-                setLoading(true);
-                const res = await checkAdmin(formData);
-                setLoading(false);
-                if (res.success) setIsLoggedIn(true);
-                else alert("❌ ACCESS DENIED: Incorrect Password");
-            }} className="flex flex-col gap-5">
-                
-                <div className="relative">
-                    <input 
-                        type="password" 
-                        name="password" 
-                        placeholder="ENTER PASSWORD_ " 
-                        className="w-full p-3 bg-black text-[#00ff41] border border-[#008f11] outline-none focus:border-[#00ff41] focus:shadow-[0_0_10px_#00ff41] font-mono placeholder:text-[#005500] text-xl text-center"
-                        autoFocus
-                    />
-                </div>
-
-                <button 
-                    disabled={loading}
-                    className="bg-[#008f11] hover:bg-[#00ff41] text-black p-3 font-bold text-lg transition-all uppercase tracking-widest border border-[#00ff41] hover:shadow-[0_0_20px_#00ff41] disabled:opacity-50"
-                >
-                    {loading ? "Authenticating..." : "Access Mainframe"}
-                </button>
-            </form>
-            
-            <p className="text-[#005500] text-xs text-center font-mono">
-                {`RESTRICTED AREA // AUTHORIZED PERSONNEL ONLY`}
-            </p>
-        </div>
+        {/* SỬA LỖI 1: w-[400px] -> w-100 */}
+        <form action={handleLogin} className="z-10 bg-[rgba(10,10,10,0.95)] border border-[#00ff41] p-10 flex flex-col gap-6 w-100 shadow-[0_0_20px_#00ff41]">
+            <h1 className="text-[#00ff41] text-3xl text-center font-bold tracking-widest">SYSTEM LOGIN</h1>
+            <input name="username" type="text" placeholder="admin" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none" />
+            <input name="password" type="password" placeholder="••••••" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none" />
+            <button type="submit" className="bg-[#00ff41] text-black font-bold p-3 mt-2 hover:bg-white uppercase">Authorize</button>
+        </form>
       </main>
     );
   }
 
-  // --- GIAO DIỆN VIẾT BÀI (Dashboard UI) ---
+  // --- DASHBOARD UI ---
   return (
-    <main className="min-h-screen p-6 md:p-12 relative pt-24 bg-black">
-      <MatrixRain />
-      
-      <div className="z-10 relative max-w-4xl mx-auto bg-[rgba(5,5,5,0.95)] border border-[#00ff41] shadow-[0_0_40px_rgba(0,255,65,0.15)] overflow-hidden">
-        {/* Header trang Admin */}
-        <div className="bg-[#001100] p-6 border-b border-[#00ff41] flex justify-between items-center">
-             <h1 className="text-2xl md:text-3xl text-[#00ff41] font-mono tracking-widest uppercase">
-                {`// Admin_Console`} <span className="animate-pulse">_</span>
-             </h1>
-             <button onClick={() => setIsLoggedIn(false)} className="text-[#008f11] hover:text-[#ff0000] font-mono text-sm border border-[#008f11] px-3 py-1 hover:border-[#ff0000]">
-                [ LOGOUT ]
-             </button>
-        </div>
-
-        <div className="p-8">
-            <h2 className="text-white font-mono mb-6 text-xl border-l-4 border-[#00ff41] pl-3">
-                {`// Create New Log Entry`}
-            </h2>
+    <main className="min-h-screen bg-black text-white py-10 px-4 font-mono relative flex flex-col items-center">
+        <div className="fixed top-0 left-0 w-full h-full -z-10 opacity-20"><MatrixRain /></div>
+        
+        <div className="w-full max-w-5xl grid grid-cols-1 lg:grid-cols-2 gap-8">
             
-            <form action={createPost} className="flex flex-col gap-6 font-mono text-[#e0e0e0]">
-                
-                {/* Tiêu đề */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-[#00ff41] text-sm uppercase tracking-wider">Title:</label>
-                    <input type="text" name="title" required className="w-full p-3 bg-[#111] text-white border border-[#333] focus:border-[#00ff41] outline-none transition-colors" placeholder="Ex: New Project Launch..." />
+            {/* CỘT TRÁI: FORM */}
+            <div>
+                <h1 className="text-2xl text-[#00ff41] mb-4 border-b border-[#333] pb-2 uppercase">Create New Log</h1>
+                <form id="createForm" action={handleCreate} className="flex flex-col gap-4 bg-[rgba(20,20,20,0.8)] p-6 border border-[#333]">
+                    
+                    {/* Title */}
+                    <div>
+                        <label className="text-[#00ff41] text-xs mb-1 block">TITLE:</label>
+                        <input type="text" name="title" required className="w-full p-2 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white" placeholder="Enter title..." />
+                    </div>
+
+                    {/* Tag & Language */}
+                    <div className="flex gap-4">
+                        <div className="flex-1">
+                            <label className="text-[#00ff41] text-xs mb-1 block">CATEGORY:</label>
+                            <select name="tag" className="w-full p-2 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white text-sm">
+                                <option value="my_confessions">My Confessions</option>
+                                <option value="uni_projects">University Projects</option>
+                                <option value="personal_projects">Personal Projects</option>
+                                <option value="it_events">IT Events</option>
+                            </select>
+                        </div>
+                        
+                        <div className="flex-1">
+                             <label className="text-[#00ff41] text-xs mb-1 block">LANGUAGE:</label>
+                             {/* SỬA LỖI 2: h-[38px] -> h-9.5 */}
+                             <div className="flex gap-4 items-center h-9.5">
+                                <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41]">
+                                    <input type="radio" name="language" value="vi" defaultChecked className="accent-[#00ff41]" /> VI
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41]">
+                                    <input type="radio" name="language" value="en" className="accent-[#00ff41]" /> EN
+                                </label>
+                                <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41]">
+                                    <input type="radio" name="language" value="jp" className="accent-[#00ff41]" /> JP
+                                </label>
+                             </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div>
+                        <label className="text-[#00ff41] text-xs mb-1 block">CONTENT:</label>
+                        <textarea name="content" rows={8} required className="w-full p-2 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white" placeholder="Markdown supported..."></textarea>
+                    </div>
+
+                    {/* Image Upload */}
+                    <div>
+                        <label className="text-[#00ff41] text-xs mb-1 block">IMAGES (Local):</label>
+                        <input type="file" name="images" multiple accept="image/*" className="w-full text-xs text-gray-400 file:bg-[#333] file:text-white file:border-0 file:py-1 file:px-2 file:mr-2 hover:file:bg-[#00ff41] hover:file:text-black cursor-pointer" />
+                    </div>
+
+                    <button disabled={loading} type="submit" className="bg-[#00ff41] text-black font-bold p-3 mt-2 hover:bg-white transition-all uppercase tracking-widest text-sm">
+                        {loading ? "PROCESSING..." : "PUBLISH LOG"}
+                    </button>
+                </form>
+            </div>
+
+            {/* CỘT PHẢI: LIST */}
+            <div>
+                <h1 className="text-2xl text-red-500 mb-4 border-b border-[#333] pb-2 uppercase">Manage Database</h1>
+                {/* SỬA LỖI 3: h-[600px] -> h-150 */}
+                <div className="bg-[rgba(20,20,20,0.8)] border border-[#333] h-150 overflow-y-auto p-4 custom-scrollbar">
+                    {posts.map((post) => (
+                        <div key={post.id} className="mb-3 p-3 border border-[#333] hover:border-[#00ff41] bg-black transition-all">
+                            <div className="flex justify-between items-start mb-2">
+                                <h3 className="text-white font-bold text-sm truncate w-[70%]">{post.title}</h3>
+                                <span className="text-[10px] bg-[#333] px-1 py-0.5 rounded text-[#00ff41] uppercase">{post.language || "VI"}</span>
+                            </div>
+                            <div className="flex justify-between text-[10px] text-gray-500 mb-2">
+                                <span>{new Date(post.createdAt).toLocaleDateString()}</span>
+                                <span className="uppercase text-gray-400">{post.tag}</span>
+                            </div>
+                            <div className="flex gap-2">
+                                <a href={`/blog/${post.id}`} target="_blank" className="flex-1 text-center py-1 border border-[#333] text-gray-400 hover:text-[#00ff41] text-xs">VIEW</a>
+                                <button onClick={() => handleDelete(post.id)} className="flex-1 text-center py-1 border border-red-900 text-red-500 hover:bg-red-600 hover:text-black text-xs font-bold">DELETE</button>
+                            </div>
+                        </div>
+                    ))}
+                    {posts.length === 0 && <p className="text-center text-gray-500 mt-10 text-xs">NO DATA FOUND</p>}
                 </div>
+            </div>
 
-                {/* Chọn Tag */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-[#00ff41] text-sm uppercase tracking-wider">Target Section:</label>
-                    <select name="tag" className="w-full p-3 bg-[#111] text-white border border-[#333] focus:border-[#00ff41] outline-none cursor-pointer">
-                        <option value="">-- Select Category --</option>
-                        <option value="uni_projects">[ University Projects ]</option>
-                        <option value="personal_projects">[ Personal Projects ]</option>
-                        <option value="it_events">[ IT Events / Gallery ]</option>
-                    </select>
-                </div>
-
-                {/* Nội dung */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-[#00ff41] text-sm uppercase tracking-wider">Content (Markdown supported):</label>
-                    <textarea name="content" rows={12} required className="w-full p-3 bg-[#111] text-white border border-[#333] focus:border-[#00ff41] outline-none" placeholder="Write your content here..."></textarea>
-                </div>
-
-                {/* Ảnh */}
-                <div className="flex flex-col gap-2">
-                    <label className="text-[#00ff41] text-sm uppercase tracking-wider">Image URLs:</label>
-                    <input type="text" name="images" placeholder="https://..., https://..." className="w-full p-3 bg-[#111] text-white border border-[#333] focus:border-[#00ff41] outline-none" />
-                    <p className="text-[10px] text-gray-500 font-sans">* Paste image links separated by commas</p>
-                </div>
-
-                <div className="h-[1px] bg-[#333] my-4"></div>
-
-                <button type="submit" className="group relative w-full overflow-hidden bg-[#00ff41] text-black p-4 font-bold text-xl uppercase tracking-[3px] hover:text-white transition-all">
-                    <span className="relative z-10">Upload Data</span>
-                    <div className="absolute inset-0 bg-black transform scale-x-0 group-hover:scale-x-100 transition-transform origin-left duration-300 z-0"></div>
-                </button>
-            </form>
         </div>
-      </div>
     </main>
   );
-}   
+}
