@@ -4,13 +4,17 @@
 
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link"; // Import Link để chuyển trang
+import Link from "next/link"; 
 
+// Import các component giao diện cũ
 import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
 import Modal from "@/components/Modal";
-import { translations, projectsData, certData, galleryData, Lang } from "@/lib/data";   
-// Import đúng, không trùng lặp
+
+// Import dữ liệu tĩnh và Type
+import { translations, projectsData, certData, galleryData, Lang } from "@/lib/data";
+
+// Import Server Actions để lấy dữ liệu DB
 import { getPostsByTag, getAllPosts } from "@/lib/actions";
 
 export default function Home() {
@@ -18,26 +22,37 @@ export default function Home() {
   const [modalOpen, setModalOpen] = useState(false);
   const [modalContent, setModalContent] = useState({ title: "", desc: "", tech: "", images: [] as string[], link: "" });
   
+  // State chứa dữ liệu từ Database
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbUniProjects, setDbUniProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbPersonalProjects, setDbPersonalProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbItEvents, setDbItEvents] = useState<any[]>([]);
+
+  // --- THÊM 2 DÒNG NÀY ---
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbLangCerts, setDbLangCerts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbTechCerts, setDbTechCerts] = useState<any[]>([]);
   
-  // State mới cho Blog
+  // State cho Blog mới nhất
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
   const t = translations[currentLang]; 
 
+  // EFFECT 1: Lấy dữ liệu từ Database khi vào trang
   useEffect(() => {
+    // Lấy dự án theo Tag
     getPostsByTag("uni_projects").then(setDbUniProjects);
     getPostsByTag("personal_projects").then(setDbPersonalProjects);
     getPostsByTag("it_events").then(setDbItEvents);
+    getPostsByTag("lang_certs").then(setDbLangCerts);
+    getPostsByTag("tech_certs").then(setDbTechCerts);
 
-    // Lấy bài viết mới nhất
+    // Lấy 3 bài viết mới nhất cho mục Blog
     getAllPosts().then((posts) => {
         if (posts && posts.length > 0) {
             setLatestPosts(posts.slice(0, 3));
@@ -45,6 +60,7 @@ export default function Home() {
     });
   }, []);
 
+  // Hàm tính tuổi
   const calculateAge = () => {
     const birthDate = new Date("2005-11-23");
     const now = new Date();
@@ -58,6 +74,7 @@ export default function Home() {
     return `${years} Years, ${months} Months`;
   };
 
+  // EFFECT 2: Hiệu ứng gõ chữ
   useEffect(() => {
     let phraseIndex = 0; let charIndex = 0; let isDeleting = false; let timeoutId: NodeJS.Timeout;
     const type = () => {
@@ -77,11 +94,13 @@ export default function Home() {
     return () => clearTimeout(timeoutId);
   }, [currentLang]);
 
+  // Hàm cuộn Carousel
   const scrollCarousel = (id: string, direction: number) => {
     const container = document.getElementById(id);
     if (container) container.scrollBy({ left: direction * 300, behavior: 'smooth' });
   };
 
+  // Hàm mở Modal (cho dữ liệu tĩnh cũ)
   const openModal = (type: 'project' | 'cert' | 'gallery', id: string) => {
     let data;
     if (type === 'project') data = projectsData[id];
@@ -99,6 +118,7 @@ export default function Home() {
     }
   };
 
+  // Hàm lấy ảnh bìa an toàn từ JSON Database
   const getCoverImage = (jsonString: string) => {
     try {
         const arr = JSON.parse(jsonString);
@@ -111,8 +131,10 @@ export default function Home() {
   return (
     <main>
         <MatrixRain />
+        {/* Giữ nguyên TopNav cũ */}
         <TopNav t={t} currentLang={currentLang} setCurrentLang={setCurrentLang} />
 
+        {/* HERO SECTION */}
         <section id="home" className="hero">
             <div className="hero-text">
                 <h3>{t.hero_greeting}</h3>
@@ -133,11 +155,13 @@ export default function Home() {
             </div>
         </section>
 
+        {/* ABOUT SECTION */}
         <section id="about" className="content-section">
             <h2>{t.sec_about}</h2>
             <p>{t.about_line1}</p><p>{t.about_line2}</p>
         </section>
 
+        {/* PROFILE SECTION */}
         <section id="profile" className="content-section">
             <h2>{t.sec_profile}</h2>
             <div className="profile-container">
@@ -162,47 +186,65 @@ export default function Home() {
             </div>
         </section>
 
+        {/* CERTIFICATES SECTION */}
         <section id="certificates" className="content-section">
             <h2>{t.sec_cert}</h2>
+            
+            {/* --- LANGUAGE CERTIFICATES --- */}
             <h3 className="carousel-title">{t.cat_lang}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="lang-certs">
-                    {['lang_1', 'lang_2', 'lang_3'].map(id => (
-                        <div key={id} className="card" onClick={() => openModal('cert', id)}>
-                            <img src={`https://placehold.co/300x200/003366/fff?text=${certData[id].en.title.split(':')[0]}`} alt="Cert" />
-                            <div className="card-info">
-                                <h4>{certData[id][currentLang].title}</h4>
-                                <p>{t.lbl_click_detail}</p>
-                            </div>
+                    {dbLangCerts.length > 0 ? (
+                        dbLangCerts.map((post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>
+                            {`// SYSTEM MESSAGE: MỤC NÀY CHƯA CẤP BẰNG LÊN ĐÂY`}
                         </div>
-                    ))}
+                    )}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('lang-certs', 1)}>&#10095;</button>
             </div>
             
+            {/* --- TECHNICAL CERTIFICATES --- */}
             <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_tech}</h3>
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="tech-certs">
-                    {['tech_1', 'tech_2', 'tech_3'].map(id => (
-                        <div key={id} className="card" onClick={() => openModal('cert', id)}>
-                            <img src={`https://placehold.co/300x200/003366/fff?text=Tech+Cert`} alt="Cert" />
-                            <div className="card-info">
-                                <h4>{certData[id][currentLang].title}</h4>
-                                <p>{t.lbl_click_detail}</p>
-                            </div>
+                    {dbTechCerts.length > 0 ? (
+                        dbTechCerts.map((post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>
+                             {`// SYSTEM MESSAGE: MỤC NÀY CHƯA CẤP BẰNG LÊN ĐÂY`}
                         </div>
-                    ))}
+                    )}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('tech-certs', 1)}>&#10095;</button>
             </div>
         </section>
 
+
         <section id="career" className="content-section"><h2>{t.sec_career}</h2><p>{t.career_desc}</p></section>
         <section id="hobby" className="content-section"><h2>{t.sec_hobby}</h2><p>{t.hobby_desc}</p></section>
         <section id="skills" className="content-section"><h2>{t.sec_skills}</h2><p>HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker, Next.js, PostgreSQL.</p></section>
 
+        {/* EXPERIENCE SECTION */}
         <section id="experience" className="content-section">
             <h2>{t.sec_exp}</h2>
             <div className="profile-container">
@@ -227,59 +269,63 @@ export default function Home() {
             </div>
         </section>
 
+        {/* PROJECTS SECTION (KẾT HỢP CŨ & MỚI) */}
         <section id="projects" className="content-section">
             <h2>{t.sec_proj}</h2>
+
+            {/* --- UNIVERSITY PROJECTS --- */}
             <h3 className="carousel-title">{t.cat_uni_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="uni-projects">
-                      {['uni_1', 'uni_2'].map(id => (
-                        <div key={id} className="card" onClick={() => openModal('project', id)}>
-                            <img src="https://placehold.co/300x200/000/00ff41?text=Uni+Project" alt="Project" />
-                            <div className="card-info"><h4>{projectsData[id][currentLang].title}</h4><p>{t.lbl_click_detail}</p></div>
+                    {dbUniProjects.length > 0 ? (
+                        dbUniProjects.map((post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>
+                            {'// SYSTEM MESSAGE: MỤC NÀY CHƯA CÓ DỰ ÁN'}
                         </div>
-                    ))}
-                    {dbUniProjects.map((post) => (
-                        <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                            <div className="card-info">
-                                <h4>{post.title}</h4>
-                                <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
-                            </div>
-                        </Link>
-                    ))}
+                    )}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('uni-projects', 1)} >&#10095;</button>
             </div>
             
+            {/* --- PERSONAL PROJECTS --- */}
             <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_personal_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="personal-projects">
-                      {['per_1', 'per_2'].map(id => (
-                        <div key={id} className="card" onClick={() => openModal('project', id)}>
-                            <img src="https://placehold.co/300x200/000/fff?text=Personal+Project" alt="Project" />
-                            <div className="card-info"><h4>{projectsData[id][currentLang].title}</h4><p>{t.lbl_click_detail}</p></div>
+                    {dbPersonalProjects.length > 0 ? (
+                        dbPersonalProjects.map((post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>
+                            {'// SYSTEM MESSAGE: MỤC NÀY CHƯA CÓ DỰ ÁN'}
                         </div>
-                    ))}
-                    {dbPersonalProjects.map((post) => (
-                        <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                            <div className="card-info">
-                                <h4>{post.title}</h4>
-                                <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p>
-                            </div>
-                        </Link>
-                    ))}
+                    )}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('personal-projects', 1)} >&#10095;</button>
             </div>
         </section>
 
-        {/* --- SECTION BLOG MỚI (Đã sửa lỗi Link và any) --- */}
+        {/* SECTION BLOG MỚI (TÍCH HỢP VÀO GIAO DIỆN CŨ) */}
         <section id="blog" className="content-section">
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}>
-                <h2>{t.nav_blog}</h2>
+                <h2>09. {t.nav_blog}</h2>
                 <Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>
                     {`View All >>>`}
                 </Link>
@@ -313,34 +359,36 @@ export default function Home() {
             </div>
         </section>
 
+        {/* GALLERY SECTION */}
         <section id="gallery" className="content-section">
-             <h2>{t.sec_gallery}</h2>
+             <h2>10. GALLERY</h2>
              <h3 className="carousel-title">{t.cat_it_event}</h3>
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button>
                 <div className="carousel-container" id="it-gallery">
-                      {['it_1', 'it_2'].map(id => (
-                        <div key={id} className="card" onClick={() => openModal('gallery', id)}>
-                            <img src="https://placehold.co/300x200/001100/00ff41?text=Event" alt="Event" />
-                            <div className="card-info"><h4>{galleryData[id][currentLang].title}</h4><p>{t.lbl_view_album}</p></div>
+                    {dbItEvents.length > 0 ? (
+                        dbItEvents.map((post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>
+                            {'// SYSTEM MESSAGE: MỤC NÀY CHƯA CÓ ẢNH SỰ KIỆN'}
                         </div>
-                    ))}
-                    {dbItEvents.map((post) => (
-                        <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                            <div className="card-info">
-                                <h4>{post.title}</h4>
-                                <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p>
-                            </div>
-                        </Link>
-                    ))}
+                    )}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button>
             </div>
         </section>
         
+        {/* CONTACT SECTION */}
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
-            <h2>{t.sec_contact}</h2>
+            <h2>11. CONTACT</h2>
             <div className="profile-container">
                 <div className="profile-box">
                     <h3>{t.box_contact_direct}</h3>
