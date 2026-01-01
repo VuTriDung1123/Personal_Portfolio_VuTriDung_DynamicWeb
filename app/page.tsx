@@ -12,6 +12,17 @@ import TopNav from "@/components/TopNav";
 import { translations, Lang } from "@/lib/data"; // Chỉ dùng data tĩnh
 import { getPostsByTag, getAllPosts } from "@/lib/actions"; // Chỉ lấy Blog
 
+// Định nghĩa kiểu dữ liệu cho bài viết
+type Post = {
+  id: string;
+  title: string;
+  images: string;
+  createdAt: Date;
+  tag?: string;
+  language?: string;
+  content?: string;
+};
+
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   
@@ -155,7 +166,7 @@ export default function Home() {
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="lang-certs">
                     {dbLangCerts.length > 0 ? (
-                        dbLangCerts.map((post: any) => (
+                        dbLangCerts.map((post: Post) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div>
@@ -173,7 +184,7 @@ export default function Home() {
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="tech-certs">
                     {dbTechCerts.length > 0 ? (
-                        dbTechCerts.map((post: any) => (
+                        dbTechCerts.map((post: Post) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div>
@@ -222,7 +233,7 @@ export default function Home() {
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="uni-projects">
                     {dbUniProjects.length > 0 ? (
-                        dbUniProjects.map((post: any) => (
+                        dbUniProjects.map((post: Post) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div>
@@ -240,7 +251,7 @@ export default function Home() {
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="personal-projects">
                     {dbPersonalProjects.length > 0 ? (
-                        dbPersonalProjects.map((post: any) => (
+                        dbPersonalProjects.map((post: Post) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div>
@@ -262,7 +273,7 @@ export default function Home() {
             <div className="carousel-wrapper">
                  <div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>
                     {latestPosts.length > 0 ? (
-                        latestPosts.map((post: any) => (
+                        latestPosts.map((post: Post) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}>
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info">
@@ -286,7 +297,7 @@ export default function Home() {
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button>
                 <div className="carousel-container" id="it-gallery">
                     {dbItEvents.length > 0 ? (
-                        dbItEvents.map((post: any) => (
+                        dbItEvents.map((post: Post) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div>
