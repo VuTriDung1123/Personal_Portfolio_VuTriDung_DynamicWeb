@@ -68,9 +68,18 @@ export default function BlogListingPage() {
                                             alt={post.title} 
                                             className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100 grayscale group-hover:grayscale-0" 
                                         />
-                                        <div className="absolute top-0 right-0 bg-[#00ff41] text-black text-xs font-bold px-3 py-1 uppercase tracking-widest">
-                                            {post.tag || "LOG"}
+
+
+                                        <div className="absolute top-0 right-0 flex">
+                                            <span className="bg-[#333] text-white text-xs font-bold px-2 py-1 uppercase border-r border-black">
+                                                {post.language || "VI"}
+                                            </span>
+                                            <span className="bg-[#00ff41] text-black text-xs font-bold px-2 py-1 uppercase">
+                                                {post.tag || "LOG"}
+                                            </span>
                                         </div>
+
+
                                     </div>
                                     
                                     {/* Thông tin bài viết */}

@@ -10,13 +10,16 @@
   },
   "dependencies": {
     "@prisma/client": "5.22.0",
+    "@tailwindcss/typography": "^0.5.19",
     "date-fns": "^4.1.0",
     "gray-matter": "^4.0.3",
     "next": "16.1.1",
     "prisma": "5.22.0",
     "react": "19.2.3",
     "react-dom": "19.2.3",
+    "react-markdown": "^10.1.0",
     "remark": "^15.0.1",
+    "remark-gfm": "^4.0.1",
     "remark-html": "^16.0.1",
     "tailwindcss-animate": "^1.0.7"
   },
