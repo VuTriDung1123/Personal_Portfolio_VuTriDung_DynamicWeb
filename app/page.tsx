@@ -9,14 +9,13 @@ import Link from "next/link";
 import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
 
-import { translations, Lang } from "@/lib/data";
-import { getPostsByTag, getAllPosts } from "@/lib/actions"; // Giữ lại cái cũ
-import { getAllSiteContent } from "@/lib/cms"; // Import cái mới từ file cms
+import { translations, Lang } from "@/lib/data"; // Chỉ dùng data tĩnh
+import { getPostsByTag, getAllPosts } from "@/lib/actions"; // Chỉ lấy Blog
 
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   
-  // State dữ liệu DB
+  // --- STATE BLOG & PROJECT (GIỮ LẠI CÁI NÀY) ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbUniProjects, setDbUniProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -29,16 +28,15 @@ export default function Home() {
   const [dbTechCerts, setDbTechCerts] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
-  
-  // --- STATE CHỨA NỘI DUNG CHỈNH SỬA ---
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [siteContent, setSiteContent] = useState<any[]>([]);
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
-  const staticT = translations[currentLang]; 
+  
+  // Biến t chứa toàn bộ chữ từ file tĩnh (An toàn tuyệt đối)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = translations[currentLang] as any; 
 
   useEffect(() => {
-    // 1. Lấy bài viết
+    // Chỉ gọi API lấy bài viết, không lấy content nữa
     getPostsByTag("uni_projects").then(setDbUniProjects);
     getPostsByTag("personal_projects").then(setDbPersonalProjects);
     getPostsByTag("it_events").then(setDbItEvents);
@@ -47,21 +45,7 @@ export default function Home() {
     getAllPosts().then((posts) => {
         if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3));
     });
-
-    // 2. Lấy nội dung chữ đã sửa
-    getAllSiteContent().then(setSiteContent);
   }, []);
-
-  // --- HÀM TRỢ GIÚP LẤY TEXT (Ưu tiên DB -> sau đó mới đến Static) ---
-  const getText = (key: string) => {
-      // Tìm trong DB xem có key này với ngôn ngữ hiện tại không
-      const item = siteContent.find(i => i.key === key && i.language === currentLang);
-      if (item && item.value) return item.value;
-      
-      // Nếu không có, lấy từ file static (translations)
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      return (staticT as any)[key] || "";
-  }
 
   const calculateAge = () => {
     const birthDate = new Date("2005-11-23");
@@ -112,24 +96,21 @@ export default function Home() {
   return (
     <main>
         <MatrixRain />
-        <TopNav t={staticT} currentLang={currentLang} setCurrentLang={setCurrentLang} />
+        <TopNav t={t} currentLang={currentLang} setCurrentLang={setCurrentLang} />
 
         <section id="home" className="hero">
             <div className="hero-text">
-                <h3>{getText("hero_greeting") || staticT.hero_greeting}</h3>
+                <h3>{t.hero_greeting}</h3>
                 <h1><span className="highlight">Vũ Trí Dũng</span></h1>
                 <div className="alt-names">
-                    <p><span className="sub-label">{staticT.lbl_en_name}</span> <span className="sub-value">David Miller</span></p>
-                    <p><span className="sub-label">{staticT.lbl_jp_name}</span> <span className="sub-value">Akina Aoi - 明菜青い</span></p>
+                    <p><span className="sub-label">{t.lbl_en_name}</span> <span className="sub-value">David Miller</span></p>
+                    <p><span className="sub-label">{t.lbl_jp_name}</span> <span className="sub-value">Akina Aoi - 明菜青い</span></p>
                 </div>
-                <p><span>{staticT.hero_iam}</span> <span ref={typeWriterRef} className="typewriter"></span></p>
-                
-                {/* DÙNG getText ĐỂ HIỂN THỊ NỘI DUNG ĐỘNG */}
-                <p className="description">{getText("hero_desc") || staticT.hero_desc}</p>
-                
+                <p><span>{t.hero_iam}</span> <span ref={typeWriterRef} className="typewriter"></span></p>
+                <p className="description">{t.hero_desc}</p>
                 <div className="btn-group">
-                    <a href="#projects" className="btn btn-primary">{staticT.btn_view_project}</a>
-                    <a href="#contact" className="btn">{staticT.btn_contact}</a>
+                    <a href="#projects" className="btn btn-primary">{t.btn_view_project}</a>
+                    <a href="#contact" className="btn">{t.btn_contact}</a>
                 </div>
             </div>
             <div className="hero-img-large">
@@ -138,44 +119,43 @@ export default function Home() {
         </section>
 
         <section id="about" className="content-section">
-            <h2>{staticT.sec_about}</h2>
-            {/* DÙNG getText */}
-            <p>{getText("about_line1") || staticT.about_line1}</p>
-            <p>{getText("about_line2") || staticT.about_line2}</p>
+            <h2>{t.sec_about}</h2>
+            <p>{t.about_line1}</p>
+            <p>{t.about_line2}</p>
         </section>
 
         <section id="profile" className="content-section">
-            <h2>{staticT.sec_profile}</h2>
+            <h2>{t.sec_profile}</h2>
             <div className="profile-container">
                 <div className="profile-box">
-                    <h3>{staticT.box_personal}</h3>
+                    <h3>{t.box_personal}</h3>
                     <ul className="profile-list">
-                        <li><span className="label">{staticT.lbl_name}</span> <span className="value highlight">Vũ Trí Dũng</span></li>
-                        <li><span className="label">{staticT.lbl_dob}</span> <span className="value">23/11/2005</span></li>
-                        <li><span className="label">{staticT.lbl_age}</span> <span className="value">{calculateAge()}</span></li>
-                        <li><span className="label">{staticT.lbl_nation}</span> <span className="value">{staticT.val_nation}</span></li>
-                        <li><span className="label">{staticT.lbl_job}</span> <span className="value">{getText("role") || staticT.val_job}</span></li>
+                        <li><span className="label">{t.lbl_name}</span> <span className="value highlight">Vũ Trí Dũng</span></li>
+                        <li><span className="label">{t.lbl_dob}</span> <span className="value">23/11/2005</span></li>
+                        <li><span className="label">{t.lbl_age}</span> <span className="value">{calculateAge()}</span></li>
+                        <li><span className="label">{t.lbl_nation}</span> <span className="value">{t.val_nation}</span></li>
+                        <li><span className="label">{t.lbl_job}</span> <span className="value">{t.val_job}</span></li>
                     </ul>
                 </div>
                 <div className="profile-box">
-                    <h3>{staticT.box_status}</h3>
+                    <h3>{t.box_status}</h3>
                     <ul className="profile-list">
-                        <li><span className="label">{staticT.lbl_address}</span> <span className="value">{staticT.val_address}</span></li>
-                        <li><span className="label">{staticT.lbl_lang}</span> <span className="value">{staticT.val_lang}</span></li>
-                        <li><span className="label">{staticT.lbl_status}</span> <span className="value highlight">{staticT.val_status}</span></li>
+                        <li><span className="label">{t.lbl_address}</span> <span className="value">{t.val_address}</span></li>
+                        <li><span className="label">{t.lbl_lang}</span> <span className="value">{t.val_lang}</span></li>
+                        <li><span className="label">{t.lbl_status}</span> <span className="value highlight">{t.val_status}</span></li>
                     </ul>
                 </div>
             </div>
         </section>
 
         <section id="certificates" className="content-section">
-            <h2>{staticT.sec_cert}</h2>
-            <h3 className="carousel-title">{staticT.cat_lang}</h3>
+            <h2>{t.sec_cert}</h2>
+            <h3 className="carousel-title">{t.cat_lang}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="lang-certs">
                     {dbLangCerts.length > 0 ? (
-                        dbLangCerts.map((post) => (
+                        dbLangCerts.map((post: any) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div>
@@ -188,12 +168,12 @@ export default function Home() {
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('lang-certs', 1)}>&#10095;</button>
             </div>
             
-            <h3 className="carousel-title" style={{marginTop: 40}}>{staticT.cat_tech}</h3>
+            <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_tech}</h3>
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="tech-certs">
                     {dbTechCerts.length > 0 ? (
-                        dbTechCerts.map((post) => (
+                        dbTechCerts.map((post: any) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div>
@@ -207,43 +187,42 @@ export default function Home() {
             </div>
         </section>
 
-        {/* CÁC PHẦN DÙNG TEXT ĐỘNG */}
-        <section id="career" className="content-section"><h2>{staticT.sec_career}</h2><p>{getText("career_desc") || staticT.career_desc}</p></section>
-        <section id="hobby" className="content-section"><h2>{staticT.sec_hobby}</h2><p>{getText("hobby_desc") || staticT.hobby_desc}</p></section>
-        <section id="skills" className="content-section"><h2>{staticT.sec_skills}</h2><p>HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker, Next.js, PostgreSQL.</p></section>
+        <section id="career" className="content-section"><h2>{t.sec_career}</h2><p>{t.career_desc}</p></section>
+        <section id="hobby" className="content-section"><h2>{t.sec_hobby}</h2><p>{t.hobby_desc}</p></section>
+        <section id="skills" className="content-section"><h2>{t.sec_skills}</h2><p>HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker, Next.js, PostgreSQL.</p></section>
 
         <section id="experience" className="content-section">
-            <h2>{staticT.sec_exp}</h2>
+            <h2>{t.sec_exp}</h2>
             <div className="profile-container">
                 <div className="profile-box">
-                    <h3>{staticT.box_it_exp}</h3>
+                    <h3>{t.box_it_exp}</h3>
                     <ul className="profile-list">
-                        <li><span className="label">{getText("exp_time_1") || staticT.exp_time_1}</span> <span className="value highlight">{getText("exp_role_1") || staticT.exp_role_1}</span></li>
-                        <li className="exp-desc">{getText("exp_desc_1") || staticT.exp_desc_1}</li>
-                        <li><span className="label">{getText("exp_time_2") || "2022-2023:"}</span> <span className="value">{getText("exp_role_2") || staticT.exp_role_2}</span></li>
-                        <li className="exp-desc">{getText("exp_desc_2") || staticT.exp_desc_2}</li>
+                        <li><span className="label">{t.exp_time_1}</span> <span className="value highlight">{t.exp_role_1}</span></li>
+                        <li className="exp-desc">{t.exp_desc_1}</li>
+                        <li><span className="label">2022-2023:</span> <span className="value">{t.exp_role_2}</span></li>
+                        <li className="exp-desc">{t.exp_desc_2}</li>
                     </ul>
                 </div>
                 <div className="profile-box">
-                    <h3>{staticT.box_non_it_exp}</h3>
+                    <h3>{t.box_non_it_exp}</h3>
                     <ul className="profile-list">
-                        <li><span className="label">2021-2022:</span> <span className="value">{staticT.exp_role_3}</span></li>
-                        <li className="exp-desc">{staticT.exp_desc_3}</li>
-                        <li><span className="label">2020:</span> <span className="value">{staticT.exp_role_4}</span></li>
-                        <li className="exp-desc">{staticT.exp_desc_4}</li>
+                        <li><span className="label">2021-2022:</span> <span className="value">{t.exp_role_3}</span></li>
+                        <li className="exp-desc">{t.exp_desc_3}</li>
+                        <li><span className="label">2020:</span> <span className="value">{t.exp_role_4}</span></li>
+                        <li className="exp-desc">{t.exp_desc_4}</li>
                     </ul>
                 </div>
             </div>
         </section>
 
         <section id="projects" className="content-section">
-            <h2>{staticT.sec_proj}</h2>
-            <h3 className="carousel-title">{staticT.cat_uni_proj}</h3>
+            <h2>{t.sec_proj}</h2>
+            <h3 className="carousel-title">{t.cat_uni_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="uni-projects">
                     {dbUniProjects.length > 0 ? (
-                        dbUniProjects.map((post) => (
+                        dbUniProjects.map((post: any) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div>
@@ -256,12 +235,12 @@ export default function Home() {
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('uni-projects', 1)} >&#10095;</button>
             </div>
             
-            <h3 className="carousel-title" style={{marginTop: 40}}>{staticT.cat_personal_proj}</h3>
+            <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_personal_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="personal-projects">
                     {dbPersonalProjects.length > 0 ? (
-                        dbPersonalProjects.map((post) => (
+                        dbPersonalProjects.map((post: any) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div>
@@ -277,13 +256,13 @@ export default function Home() {
 
         <section id="blog" className="content-section">
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}>
-                <h2>09. {staticT.nav_blog}</h2>
+                <h2>09. {t.nav_blog}</h2>
                 <Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>{`View All >>>`}</Link>
             </div>
             <div className="carousel-wrapper">
                  <div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>
                     {latestPosts.length > 0 ? (
-                        latestPosts.map((post) => (
+                        latestPosts.map((post: any) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}>
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info">
@@ -301,13 +280,13 @@ export default function Home() {
         </section>
 
         <section id="gallery" className="content-section">
-             <h2>10. {staticT.sec_gallery}</h2>
-             <h3 className="carousel-title">{staticT.cat_it_event}</h3>
+             <h2>10. GALLERY</h2> 
+             <h3 className="carousel-title">{t.cat_it_event}</h3>
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button>
                 <div className="carousel-container" id="it-gallery">
                     {dbItEvents.length > 0 ? (
-                        dbItEvents.map((post) => (
+                        dbItEvents.map((post: any) => (
                             <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
                                 <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
                                 <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div>
@@ -322,17 +301,17 @@ export default function Home() {
         </section>
         
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
-            <h2>{staticT.sec_contact}</h2>
+            <h2>{t.sec_contact}</h2>
             <div className="profile-container">
                 <div className="profile-box">
-                    <h3>{staticT.box_contact_direct}</h3>
+                    <h3>{t.box_contact_direct}</h3>
                     <ul className="profile-list">
                         <li style={{ alignItems: 'flex-start' }}><span className="label">Email:</span><div className="value"><div>- dungvutri25@gmail.com (Main)</div><div>- dungvutri2k5@gmail.com</div></div></li>
                         <li style={{ alignItems: 'flex-start' }}><span className="label">Phone:</span><div className="value"><div>- (+84) 931 466 930 (Main)</div><div>- 0903 601 125</div></div></li>
                     </ul>
                 </div>
                 <div className="profile-box">
-                    <h3>{staticT.box_social}</h3>
+                    <h3>{t.box_social}</h3>
                     <ul className="profile-list">
                         <li><span className="label">LinkedIn:</span> <a href="https://linkedin.com/in/dungvutri23112005" target="_blank" className="value link-hover">/dungvutri23112005</a></li>
                         <li style={{ alignItems: 'flex-start' }}><span className="label">Github:</span><div className="value"><div><a href="https://github.com/VuTriDung1123" target="_blank" className="link-hover">- /VuTriDung1123 (Main)</a></div><div><a href="https://github.com/VuTriDung" target="_blank" className="link-hover">- /VuTriDung</a></div></div></li>
