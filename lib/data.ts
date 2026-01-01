@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 export type Lang = "en" | "vi" | "jp";
 
 export const translations = {
@@ -14,7 +15,7 @@ export const translations = {
     nav_proj: "Projects",
     nav_gallery: "Gallery",
     nav_contact: "Contact",
-    nav_blog: "Blog", // Đã thêm dòng này
+    nav_blog: "Blog", 
 
     hero_greeting: "HELLO, WORLD!",
     hero_iam: "I am a",
@@ -101,7 +102,7 @@ export const translations = {
     nav_proj: "Dự Án",
     nav_gallery: "Thư Viện",
     nav_contact: "Liên Hệ",
-    nav_blog: "Bài Viết", // Đã thêm dòng này
+    nav_blog: "Bài Viết", 
 
     hero_greeting: "XIN CHÀO!",
     hero_iam: "Tôi là một",
@@ -169,7 +170,7 @@ export const translations = {
     cat_it_event: "Sự Kiện IT",
     lbl_view_album: "(Xem Album)",
     
-    sec_contact: "10. LIÊN HỆ",
+    sec_contact: "10. CONTACT",
     box_contact_direct: "Liên Hệ Trực Tiếp",
     box_social: "Mạng Xã Hội",
     
@@ -188,7 +189,7 @@ export const translations = {
     nav_proj: "プロジェクト",
     nav_gallery: "ギャラリー",
     nav_contact: "連絡先",
-    nav_blog: "ブログ", // Đã thêm dòng này
+    nav_blog: "ブログ", 
 
     hero_greeting: "こんにちは!",
     hero_iam: "私は",
@@ -264,7 +265,7 @@ export const translations = {
   }
 };
 
-// --- DỮ LIỆU TĨNH CHO CÁC MỤC (Placeholder) ---
+// --- DỮ LIỆU TĨNH ---
 export const projectsData: Record<string, any> = {
     uni_1: {
         en: { title: "University Project A", desc: "A great project", tech: "C#, .NET", images: [], link: "#" },

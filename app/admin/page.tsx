@@ -49,7 +49,7 @@ export default function AdminPage() {
     return (
       <main className="h-screen flex items-center justify-center relative overflow-hidden bg-black font-mono">
         <MatrixRain />
-        <form action={handleLogin} className="z-10 bg-[rgba(5,5,5,0.95)] border border-[#00ff41] p-10 flex flex-col gap-6 w-[400px] shadow-[0_0_30px_#00ff41]">
+        <form action={handleLogin} className="z-10 bg-[rgba(5,5,5,0.95)] border border-[#00ff41] p-10 flex flex-col gap-6 w-full max-w-sm shadow-[0_0_30px_#00ff41]">
             <h1 className="text-[#00ff41] text-3xl text-center font-bold tracking-widest mb-2">SYSTEM LOGIN</h1>
             <input name="username" type="text" placeholder="Username" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none transition-colors" />
             <input name="password" type="password" placeholder="Password" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none transition-colors" />
@@ -101,7 +101,7 @@ export default function AdminPage() {
                             </div>
                             <div className="flex-1">
                                 <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Language</label>
-                                <div className="flex items-center gap-4 h-[46px] bg-black border border-[#333] px-4">
+                                <div className="flex items-center gap-4 h-12 bg-black border border-[#333] px-4">
                                     <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="vi" defaultChecked className="accent-[#00ff41]" /> VI</label>
                                     <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="en" className="accent-[#00ff41]" /> EN</label>
                                     <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="jp" className="accent-[#00ff41]" /> JP</label>
@@ -130,7 +130,7 @@ export default function AdminPage() {
 
                 {/* RIGHT: LIST POSTS */}
                 <div className="lg:col-span-1">
-                    <div className="bg-[#0a0a0a] border border-[#333] h-[850px] flex flex-col shadow-lg">
+                    <div className="bg-[#0a0a0a] border border-[#333] h-[80vh] flex flex-col shadow-lg">
                         <div className="p-4 border-b border-[#333] bg-black">
                             <h2 className="text-[#00ff41] text-xl uppercase font-bold">Database Logs</h2>
                             <p className="text-gray-600 text-xs mt-1">Total entries: {posts.length}</p>
