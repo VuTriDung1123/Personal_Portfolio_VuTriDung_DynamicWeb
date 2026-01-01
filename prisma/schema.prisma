@@ -5,8 +5,11 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql" // Bắt buộc là postgresql
-  url      = env("DATABASE_URL")
+  provider = "postgresql"
+  // Dùng đường dẫn có Pool (để web chạy nhanh hơn)
+  url = env("POSTGRES_PRISMA_URL") 
+  // Dùng đường dẫn trực tiếp (Bắt buộc để chạy lệnh tạo bảng)
+  directUrl = env("POSTGRES_URL_NON_POOLING") 
 }
 
 model Post {
