@@ -51,10 +51,9 @@ export default function AdminPage() {
     if(formRef.current) formRef.current.reset();
   }
 
-  // --- HÀM BẮT ĐẦU SỬA (Thay thế cho useEffect cũ) ---
+  // --- HÀM BẮT ĐẦU SỬA ---
   const handleStartEdit = (post: Post) => {
     setEditingPost(post);
-    // Đổ dữ liệu cũ vào form ngay khi bấm nút
     setTitle(post.title);
     setContent(post.content || "");
     setTag(post.tag || "my_confessions");
@@ -259,7 +258,10 @@ export default function AdminPage() {
                                             <div>{new Date(post.createdAt).toLocaleDateString()}</div>
                                         </div>
                                         <div className="flex gap-2">
-                                            {/* SỬA GỌI HÀM handleStartEdit THAY VÌ setEditingPost TRỰC TIẾP */}
+                                            {/* ĐÃ THÊM LẠI NÚT VIEW Ở ĐÂY */}
+                                            <a href={`/blog/${post.id}`} target="_blank" className="text-[10px] text-gray-400 hover:text-white border border-[#333] px-2 py-1 flex items-center">
+                                                VIEW
+                                            </a>
                                             <button onClick={() => handleStartEdit(post)} className="text-[10px] text-yellow-500 hover:text-yellow-300 border border-yellow-900/50 px-2 py-1 bg-yellow-900/20">
                                                 EDIT
                                             </button>
