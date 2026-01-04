@@ -1,12 +1,17 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    // !! Bỏ qua lỗi TypeScript khi build để tránh lỗi vặt
-    ignoreBuildErrors: true,
+  // Cấu hình cho phép ảnh từ link ngoài
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: 'images.unsplash.com' },
+      { protocol: 'https', hostname: 'res.cloudinary.com' },
+      { protocol: 'https', hostname: 'i.imgur.com' },
+    ],
   },
-  eslint: {
-    // !! Bỏ qua lỗi ESLint khi build
-    ignoreDuringBuilds: true,
+  
+  // Vẫn giữ cái này để tránh lỗi TypeScript khi build
+  typescript: {
+    ignoreBuildErrors: true,
   },
 };
 
