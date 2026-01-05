@@ -5,14 +5,12 @@
 import { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import Link from "next/link"; 
+// ĐÃ XÓA IMPORT MatrixRain
 
-import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
+import { translations, Lang } from "@/lib/data"; 
+import { getPostsByTag, getAllPosts } from "@/lib/actions"; 
 
-import { translations, Lang } from "@/lib/data"; // Chỉ dùng data tĩnh
-import { getPostsByTag, getAllPosts } from "@/lib/actions"; // Chỉ lấy Blog
-
-// Định nghĩa kiểu dữ liệu cho bài viết
 type Post = {
   id: string;
   title: string;
@@ -26,7 +24,6 @@ type Post = {
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   
-  // --- STATE BLOG & PROJECT (GIỮ LẠI CÁI NÀY) ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbUniProjects, setDbUniProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -41,13 +38,10 @@ export default function Home() {
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
-  
-  // Biến t chứa toàn bộ chữ từ file tĩnh (An toàn tuyệt đối)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const t = translations[currentLang] as any; 
 
   useEffect(() => {
-    // Chỉ gọi API lấy bài viết, không lấy content nữa
     getPostsByTag("uni_projects").then(setDbUniProjects);
     getPostsByTag("personal_projects").then(setDbPersonalProjects);
     getPostsByTag("it_events").then(setDbItEvents);
@@ -104,9 +98,23 @@ export default function Home() {
     }
   };
 
+  // Helper render card để code gọn hơn
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const renderCard = (post: any, label: string) => (
+    <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none group">
+        <img src={getCoverImage(post.images)} alt={post.title} className="h-40 w-full object-cover" />
+        <div className="card-info">
+            <h4>{post.title}</h4>
+            <p className="text-xs mt-1 text-pink-600 dark:text-[#00ff41] font-bold group-hover:underline">
+                &gt;&gt; {label}
+            </p>
+        </div>
+    </Link>
+  );
+
   return (
-    <main>
-        <MatrixRain />
+    // QUAN TRỌNG: Không set bg-black ở đây
+    <main className="min-h-screen"> 
         <TopNav t={t} currentLang={currentLang} setCurrentLang={setCurrentLang} />
 
         <section id="home" className="hero">
@@ -125,7 +133,7 @@ export default function Home() {
                 </div>
             </div>
             <div className="hero-img-large">
-                <Image src="/pictures/VuTriDung.jpg" alt="Vũ Trí Dũng" width={350} height={350} />
+                <Image src="/pictures/VuTriDung.jpg" alt="Vũ Trí Dũng" width={350} height={350} priority className="object-cover w-full h-full" />
             </div>
         </section>
 
@@ -161,38 +169,25 @@ export default function Home() {
 
         <section id="certificates" className="content-section">
             <h2>{t.sec_cert}</h2>
+            
+            {/* Language Certs */}
             <h3 className="carousel-title">{t.cat_lang}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="lang-certs">
-                    {dbLangCerts.length > 0 ? (
-                        dbLangCerts.map((post: Post) => (
-                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                                <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>{`// SYSTEM MESSAGE: MỤC NÀY CHƯA CẤP BẰNG LÊN ĐÂY`}</div>
-                    )}
+                    {dbLangCerts.length > 0 ? dbLangCerts.map(p => renderCard(p, "VIEW CERT")) : 
+                        <div className="w-full text-center p-5 border border-dashed border-gray-400 dark:border-[#333] text-gray-500 italic">SYSTEM: NO DATA</div>}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('lang-certs', 1)}>&#10095;</button>
             </div>
             
-            <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_tech}</h3>
+            {/* Tech Certs */}
+            <h3 className="carousel-title mt-10">{t.cat_tech}</h3>
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button>
                 <div className="carousel-container" id="tech-certs">
-                    {dbTechCerts.length > 0 ? (
-                        dbTechCerts.map((post: Post) => (
-                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                                <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>{`// SYSTEM MESSAGE: MỤC NÀY CHƯA CẤP BẰNG LÊN ĐÂY`}</div>
-                    )}
+                    {dbTechCerts.length > 0 ? dbTechCerts.map(p => renderCard(p, "VIEW CERT")) : 
+                        <div className="w-full text-center p-5 border border-dashed border-gray-400 dark:border-[#333] text-gray-500 italic">SYSTEM: NO DATA</div>}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('tech-certs', 1)}>&#10095;</button>
             </div>
@@ -209,18 +204,18 @@ export default function Home() {
                     <h3>{t.box_it_exp}</h3>
                     <ul className="profile-list">
                         <li><span className="label">{t.exp_time_1}</span> <span className="value highlight">{t.exp_role_1}</span></li>
-                        <li className="exp-desc">{t.exp_desc_1}</li>
+                        <li className="text-sm italic text-gray-600 dark:text-gray-400 mb-2 pl-4">{t.exp_desc_1}</li>
                         <li><span className="label">2022-2023:</span> <span className="value">{t.exp_role_2}</span></li>
-                        <li className="exp-desc">{t.exp_desc_2}</li>
+                        <li className="text-sm italic text-gray-600 dark:text-gray-400 mb-2 pl-4">{t.exp_desc_2}</li>
                     </ul>
                 </div>
                 <div className="profile-box">
                     <h3>{t.box_non_it_exp}</h3>
                     <ul className="profile-list">
                         <li><span className="label">2021-2022:</span> <span className="value">{t.exp_role_3}</span></li>
-                        <li className="exp-desc">{t.exp_desc_3}</li>
+                        <li className="text-sm italic text-gray-600 dark:text-gray-400 mb-2 pl-4">{t.exp_desc_3}</li>
                         <li><span className="label">2020:</span> <span className="value">{t.exp_role_4}</span></li>
-                        <li className="exp-desc">{t.exp_desc_4}</li>
+                        <li className="text-sm italic text-gray-600 dark:text-gray-400 mb-2 pl-4">{t.exp_desc_4}</li>
                     </ul>
                 </div>
             </div>
@@ -232,60 +227,32 @@ export default function Home() {
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="uni-projects">
-                    {dbUniProjects.length > 0 ? (
-                        dbUniProjects.map((post: Post) => (
-                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                                <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>{`// SYSTEM MESSAGE: MỤC NÀY CHƯA CÓ DỰ ÁN`}</div>
-                    )}
+                    {dbUniProjects.length > 0 ? dbUniProjects.map(p => renderCard(p, "READ LOG")) : 
+                        <div className="w-full text-center p-5 border border-dashed border-gray-400 dark:border-[#333] text-gray-500 italic">SYSTEM: NO DATA</div>}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('uni-projects', 1)} >&#10095;</button>
             </div>
             
-            <h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_personal_proj}</h3>
+            <h3 className="carousel-title mt-10">{t.cat_personal_proj}</h3>
             <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button>
                 <div className="carousel-container" id="personal-projects">
-                    {dbPersonalProjects.length > 0 ? (
-                        dbPersonalProjects.map((post: Post) => (
-                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                                <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>{`// SYSTEM MESSAGE: MỤC NÀY CHƯA CÓ DỰ ÁN`}</div>
-                    )}
+                    {dbPersonalProjects.length > 0 ? dbPersonalProjects.map(p => renderCard(p, "READ LOG")) : 
+                         <div className="w-full text-center p-5 border border-dashed border-gray-400 dark:border-[#333] text-gray-500 italic">SYSTEM: NO DATA</div>}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('personal-projects', 1)} >&#10095;</button>
             </div>
         </section>
 
         <section id="blog" className="content-section">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}>
+            <div className="flex justify-between items-end mb-5">
                 <h2>09. {t.nav_blog}</h2>
-                <Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>{`View All >>>`}</Link>
+                <Link href="/blog" className="text-xl text-gray-500 dark:text-[#e0e0e0] hover:text-pink-600 dark:hover:text-[#00ff41] transition-colors">{`View All >>>`}</Link>
             </div>
             <div className="carousel-wrapper">
-                 <div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>
-                    {latestPosts.length > 0 ? (
-                        latestPosts.map((post: Post) => (
-                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}>
-                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                                <div className="card-info">
-                                    <h4>{post.title}</h4>
-                                    <p style={{fontSize: '0.9rem', color: '#aaa', margin: '5px 0'}}>{new Date(post.createdAt).toLocaleDateString()}</p>
-                                    <p className="text-[#00ff41] text-xs">&gt;&gt; ACCESS LOG</p>
-                                </div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px'}}>[SYSTEM: NO LOGS FOUND]</div>
-                    )}
+                 <div className="carousel-container flex gap-5 overflow-x-auto pb-5">
+                    {latestPosts.length > 0 ? latestPosts.map(p => renderCard(p, "ACCESS LOG")) : 
+                        <div className="w-full text-center text-gray-500 italic">[SYSTEM: NO LOGS FOUND]</div>}
                  </div>
             </div>
         </section>
@@ -296,36 +263,28 @@ export default function Home() {
              <div className="carousel-wrapper">
                 <button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button>
                 <div className="carousel-container" id="it-gallery">
-                    {dbItEvents.length > 0 ? (
-                        dbItEvents.map((post: Post) => (
-                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
-                                <div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div>
-                            </Link>
-                        ))
-                    ) : (
-                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>{`// SYSTEM MESSAGE: MỤC NÀY CHƯA CÓ ẢNH SỰ KIỆN`}</div>
-                    )}
+                    {dbItEvents.length > 0 ? dbItEvents.map(p => renderCard(p, "VIEW ALBUM")) : 
+                        <div className="w-full text-center p-5 border border-dashed border-gray-400 dark:border-[#333] text-gray-500 italic">SYSTEM: NO DATA</div>}
                 </div>
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button>
             </div>
         </section>
         
-        <section id="contact" className="content-section" style={{marginBottom: 50}}>
+        <section id="contact" className="content-section mb-12">
             <h2>{t.sec_contact}</h2>
             <div className="profile-container">
                 <div className="profile-box">
                     <h3>{t.box_contact_direct}</h3>
                     <ul className="profile-list">
-                        <li style={{ alignItems: 'flex-start' }}><span className="label">Email:</span><div className="value"><div>- dungvutri25@gmail.com (Main)</div><div>- dungvutri2k5@gmail.com</div></div></li>
-                        <li style={{ alignItems: 'flex-start' }}><span className="label">Phone:</span><div className="value"><div>- (+84) 931 466 930 (Main)</div><div>- 0903 601 125</div></div></li>
+                        <li><span className="label">Email:</span><div className="value">dungvutri25@gmail.com</div></li>
+                        <li><span className="label">Phone:</span><div className="value">(+84) 931 466 930</div></li>
                     </ul>
                 </div>
                 <div className="profile-box">
                     <h3>{t.box_social}</h3>
                     <ul className="profile-list">
-                        <li><span className="label">LinkedIn:</span> <a href="https://linkedin.com/in/dungvutri23112005" target="_blank" className="value link-hover">/dungvutri23112005</a></li>
-                        <li style={{ alignItems: 'flex-start' }}><span className="label">Github:</span><div className="value"><div><a href="https://github.com/VuTriDung1123" target="_blank" className="link-hover">- /VuTriDung1123 (Main)</a></div><div><a href="https://github.com/VuTriDung" target="_blank" className="link-hover">- /VuTriDung</a></div></div></li>
+                        <li><span className="label">LinkedIn:</span> <a href="https://linkedin.com/in/dungvutri23112005" target="_blank" className="value hover:underline">/dungvutri23112005</a></li>
+                        <li><span className="label">Github:</span> <a href="https://github.com/VuTriDung1123" target="_blank" className="value hover:underline">/VuTriDung1123</a></li>
                     </ul>
                 </div>
             </div>

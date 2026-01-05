@@ -2,13 +2,12 @@
 
 import { createPost, updatePost, checkAdmin, getAllPosts, deletePost } from "@/lib/actions";
 import { useState, useEffect, useRef } from "react";
-import MatrixRain from "@/components/MatrixRain";
+// ĐÃ XÓA MatrixRain
 
-// Định nghĩa kiểu dữ liệu cho bài viết
 type Post = {
     id: string;
     title: string;
-    images: string; // Chuỗi JSON chứa danh sách link
+    images: string; 
     createdAt: Date;
     tag?: string;
     language?: string;
@@ -20,11 +19,9 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(false);
   const [posts, setPosts] = useState<Post[]>([]);
   
-  // --- STATE ---
-  const [editingPost, setEditingPost] = useState<Post | null>(null); // Bài đang sửa
-  const formRef = useRef<HTMLFormElement>(null); // Để reset form
+  const [editingPost, setEditingPost] = useState<Post | null>(null); 
+  const formRef = useRef<HTMLFormElement>(null); 
 
-  // Form inputs
   const [imageLinks, setImageLinks] = useState<string[]>([""]);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
@@ -34,155 +31,102 @@ export default function AdminPage() {
   const refreshData = async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       getAllPosts().then((data: any) => setPosts(data));
-  }
-
-  useEffect(() => {
-    if (isLoggedIn) refreshData();
-  }, [isLoggedIn]);
-
-  // --- HÀM RESET FORM ---
-  const resetForm = () => {
-    setTitle("");
-    setContent("");
-    setTag("my_confessions");
-    setLanguage("vi");
-    setImageLinks([""]);
-    setEditingPost(null); // Thoát chế độ sửa
-    if(formRef.current) formRef.current.reset();
-  }
-
-  // --- HÀM BẮT ĐẦU SỬA ---
-  const handleStartEdit = (post: Post) => {
-    setEditingPost(post);
-    setTitle(post.title);
-    setContent(post.content || "");
-    setTag(post.tag || "my_confessions");
-    setLanguage(post.language || "vi");
-    try {
-      const links = JSON.parse(post.images || "[]");
-      setImageLinks(links.length > 0 ? links : [""]);
-    } catch { setImageLinks([""]); }
   };
 
-  const handleCancelEdit = () => {
-    resetForm();
-  };
+  useEffect(() => { if (isLoggedIn) refreshData(); }, [isLoggedIn]);
 
   const handleLogin = async (formData: FormData) => {
+    setLoading(true);
     const res = await checkAdmin(formData);
+    setLoading(false);
     if (res.success) setIsLoggedIn(true);
-    else alert("ACCESS DENIED / SAI MẬT KHẨU");
+    else alert("WRONG PASSWORD!");
   };
 
-  // --- XỬ LÝ LINK ẢNH ---
-  const handleLinkChange = (index: number, value: string) => {
-    const newLinks = [...imageLinks];
-    newLinks[index] = value;
-    setImageLinks(newLinks);
-  };
-
-  const addLinkField = () => { setImageLinks([...imageLinks, ""]); };
-  const removeLinkField = (index: number) => {
-    const newLinks = imageLinks.filter((_, i) => i !== index);
-    setImageLinks(newLinks.length > 0 ? newLinks : [""]);
-  };
-  
-  // --- XỬ LÝ SUBMIT FORM ---
   const handleSubmit = async (formData: FormData) => {
     setLoading(true);
-    
-    // Chuẩn bị dữ liệu
-    const validLinks = imageLinks.filter(link => link.trim() !== "");
-    formData.set("images", JSON.stringify(validLinks));
-    formData.set("tag", tag);
-    formData.set("language", language);
+    const validImages = imageLinks.filter(link => link.trim() !== "");
+    formData.set("images", JSON.stringify(validImages));
 
     if (editingPost) {
-        // --- LOGIC CẬP NHẬT ---
-        formData.set("id", editingPost.id);
+        formData.append("id", editingPost.id);
         await updatePost(formData);
-        alert("Cập nhật bài viết thành công!");
+        alert("UPDATED SUCCESSFULLY!");
+        setEditingPost(null);
     } else {
-        // --- LOGIC TẠO MỚI ---
         await createPost(formData);
-        alert("Đăng bài thành công!");
+        alert("POST CREATED!");
     }
-
-    resetForm(); // Reset form sau khi xong
+    
+    if (formRef.current) formRef.current.reset();
+    setTitle(""); setContent(""); setImageLinks([""]);
     setLoading(false);
     refreshData();
   };
 
   const handleDelete = async (id: string) => {
-    if(confirm("Bạn chắc chắn muốn xóa bài này?")) {
-        setLoading(true);
-        await deletePost(id);
-        refreshData();
-        setLoading(false);
-        if(editingPost?.id === id) resetForm();
-    }
-  }
+      if (confirm("DELETE THIS POST?")) {
+          await deletePost(id);
+          refreshData();
+      }
+  };
 
-  // --- MÀN HÌNH ĐĂNG NHẬP ---
+  const handleStartEdit = (post: Post) => {
+      setEditingPost(post);
+      setTitle(post.title);
+      setContent(post.content || "");
+      setTag(post.tag || "my_confessions");
+      setLanguage(post.language || "vi");
+      try { setImageLinks(JSON.parse(post.images)); } catch { setImageLinks([""]); }
+      window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  const handleAddImageLink = () => setImageLinks([...imageLinks, ""]);
+  const handleImageLinkChange = (index: number, value: string) => {
+      const newLinks = [...imageLinks];
+      newLinks[index] = value;
+      setImageLinks(newLinks);
+  };
+  const handleRemoveImageLink = (index: number) => {
+      const newLinks = imageLinks.filter((_, i) => i !== index);
+      setImageLinks(newLinks);
+  };
+
   if (!isLoggedIn) {
     return (
-      <main className="h-screen flex items-center justify-center relative overflow-hidden bg-black font-mono">
-        <MatrixRain />
-        <form action={handleLogin} className="z-10 bg-[rgba(5,5,5,0.95)] border border-[#00ff41] p-10 flex flex-col gap-6 w-96 shadow-[0_0_30px_#00ff41]">
-            <h1 className="text-[#00ff41] text-3xl text-center font-bold tracking-widest mb-2">SYSTEM LOGIN</h1>
-            <input name="username" type="text" placeholder="Username" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none transition-colors" />
-            <input name="password" type="password" placeholder="Password" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none transition-colors" />
-            <button type="submit" className="bg-[#00ff41] text-black font-bold p-3 mt-2 hover:bg-white hover:tracking-widest transition-all uppercase">Authorize</button>
+      <main className="min-h-screen flex items-center justify-center font-mono">
+        <form action={handleLogin} className="border border-pink-500 dark:border-[#00ff41] p-10 bg-white/90 dark:bg-black/90 shadow-2xl rounded-lg">
+          <h1 className="text-2xl mb-6 text-center text-pink-600 dark:text-[#00ff41] tracking-widest font-bold">ADMIN ACCESS</h1>
+          <input name="username" placeholder="Username" className="block w-full mb-4 p-3 bg-gray-100 dark:bg-[#111] text-black dark:text-[#00ff41] border border-gray-300 dark:border-[#333] outline-none focus:border-pink-500 dark:focus:border-[#00ff41]" required />
+          <input type="password" name="password" placeholder="Password" className="block w-full mb-6 p-3 bg-gray-100 dark:bg-[#111] text-black dark:text-[#00ff41] border border-gray-300 dark:border-[#333] outline-none focus:border-pink-500 dark:focus:border-[#00ff41]" required />
+          <button disabled={loading} className="w-full bg-pink-600 dark:bg-[#00ff41] text-white dark:text-black font-bold py-3 hover:opacity-80 transition-opacity">
+            {loading ? "VERIFYING..." : "LOGIN"}
+          </button>
         </form>
       </main>
     );
   }
 
-  // --- GIAO DIỆN ADMIN CHÍNH ---
   return (
-    <main className="min-h-screen bg-black text-white font-mono relative pb-20">
-        <div className="fixed top-0 left-0 w-full h-full -z-10 opacity-20 pointer-events-none"><MatrixRain /></div>
-        
-        <header className="border-b border-[#333] bg-black/90 sticky top-0 z-50 backdrop-blur-md">
-            <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                <div className="text-[#00ff41] font-bold text-xl tracking-widest">:: ADMIN DASHBOARD ::</div>
-                <div className="text-gray-500 text-xs">LOGGED IN AS ADMIN</div>
-            </div>
-        </header>
-        
-        <div className="max-w-7xl mx-auto px-6 py-10">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
-                
-                {/* CỘT TRÁI: FORM */}
-                <div className="lg:col-span-2">
-                    <form ref={formRef} action={handleSubmit} className={`flex flex-col gap-6 bg-[#0a0a0a] p-8 border shadow-lg relative group transition-colors ${editingPost ? 'border-yellow-600 hover:border-yellow-400' : 'border-[#333] hover:border-[#00ff41]'}`}>
-                        
-                        <div className={`absolute top-0 right-0 text-xs px-2 py-1 text-black font-bold ${editingPost ? 'bg-yellow-600' : 'bg-[#00ff41]'}`}>
-                            {editingPost ? `EDITING MODE (ID: ${editingPost.id.slice(0,6)}...)` : 'NEW ENTRY MODE'}
-                        </div>
-                        
-                        <div className="flex justify-between items-center border-b border-[#333] pb-4 mb-2">
-                            <h1 className={`text-2xl uppercase ${editingPost ? 'text-yellow-500' : 'text-white'}`}>
-                                {editingPost ? "Update Existing Log" : "Write New Log"}
-                            </h1>
-                            {editingPost && (
-                                <button type="button" onClick={handleCancelEdit} className="text-xs text-gray-400 hover:text-white underline">
-                                    Cancel Edit (Create New)
-                                </button>
-                            )}
-                        </div>
-                        
-                        {/* Title */}
+    <main className="min-h-screen p-10 font-mono text-gray-800 dark:text-white">
+        <div className="max-w-6xl mx-auto">
+            <h1 className="text-4xl mb-8 border-b-2 border-pink-500 dark:border-[#00ff41] pb-4 text-pink-600 dark:text-[#00ff41]">
+                ADMIN DASHBOARD {editingPost && <span className="text-yellow-500 text-lg ml-4">(EDITING MODE)</span>}
+            </h1>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
+                {/* FORM */}
+                <div className="bg-white/90 dark:bg-[#0a0a0a] p-6 border border-pink-300 dark:border-[#333] shadow-lg h-fit">
+                    <form ref={formRef} action={handleSubmit} className="flex flex-col gap-4">
                         <div>
-                            <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Title</label>
-                            <input type="text" name="title" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-3 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white transition-all" placeholder="Enter title..." />
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">TITLE</label>
+                            <input name="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Post Title" className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none" required />
                         </div>
 
-                        {/* Category & Language */}
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <div className="flex-1">
-                                <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Category</label>
-                                <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="w-full p-3 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white text-sm">
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">TAG</label>
+                                <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none">
                                     <option value="my_confessions">My Confessions</option>
                                     <option value="uni_projects">University Projects</option>
                                     <option value="personal_projects">Personal Projects</option>
@@ -191,86 +135,68 @@ export default function AdminPage() {
                                     <option value="tech_certs">Technical Certificates</option>
                                 </select>
                             </div>
-                            <div className="flex-1">
-                                <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Language</label>
-                                <div className="flex items-center gap-4 h-12 bg-black border border-[#333] px-4">
-                                    <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="vi" checked={language === 'vi'} onChange={() => setLanguage('vi')} className="accent-[#00ff41]" /> VI</label>
-                                    <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="en" checked={language === 'en'} onChange={() => setLanguage('en')} className="accent-[#00ff41]" /> EN</label>
-                                    <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="jp" checked={language === 'jp'} onChange={() => setLanguage('jp')} className="accent-[#00ff41]" /> JP</label>
+                            <div>
+                                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">LANGUAGE</label>
+                                <select name="language" value={language} onChange={e => setLanguage(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none">
+                                    <option value="vi">Vietnamese</option>
+                                    <option value="en">English</option>
+                                    <option value="jp">Japanese</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* IMAGE LINKS INPUT */}
+                        <div className="border border-dashed border-gray-300 dark:border-[#333] p-4">
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block font-bold">IMAGE LINKS (URL)</label>
+                            {imageLinks.map((link, index) => (
+                                <div key={index} className="flex gap-2 mb-2">
+                                    <input 
+                                        type="text" 
+                                        value={link}
+                                        onChange={(e) => handleImageLinkChange(index, e.target.value)}
+                                        placeholder="https://example.com/image.jpg" 
+                                        className="w-full p-2 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] text-sm focus:border-pink-500 dark:focus:border-[#00ff41] outline-none" 
+                                    />
+                                    <button type="button" onClick={() => handleRemoveImageLink(index)} className="text-red-500 px-2 border border-red-500 hover:bg-red-500 hover:text-white">X</button>
                                 </div>
-                            </div>
+                            ))}
+                            <button type="button" onClick={handleAddImageLink} className="text-xs bg-gray-200 dark:bg-[#222] px-3 py-1 hover:bg-gray-300 dark:hover:bg-[#333] transition">+ ADD LINK</button>
                         </div>
 
-                        {/* Content */}
                         <div>
-                            <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Content</label>
-                            <textarea name="content" rows={12} value={content} onChange={e => setContent(e.target.value)} required className="w-full p-3 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white font-mono text-sm leading-relaxed" placeholder="Write your content here (Markdown supported)..."></textarea>
+                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">CONTENT (MARKDOWN)</label>
+                            <textarea name="content" value={content} onChange={e => setContent(e.target.value)} placeholder="# Hello World..." rows={10} className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none font-mono text-sm" required />
                         </div>
 
-                        {/* Image Links */}
-                        <div>
-                            <div className="flex justify-between items-end mb-2">
-                                <label className="text-gray-500 text-[10px] uppercase tracking-wider">Image URLs (First link is Cover)</label>
-                                <button type="button" onClick={addLinkField} className="text-[10px] bg-[#222] text-[#00ff41] px-2 py-1 border border-[#333] hover:bg-[#00ff41] hover:text-black transition-colors">+ ADD URL SLOT</button>
-                            </div>
-                            <div className="space-y-3">
-                                {imageLinks.map((link, index) => (
-                                    <div key={index} className="flex gap-2">
-                                        <div className="relative w-full">
-                                            <span className="absolute left-3 top-3 text-gray-600 text-xs font-bold">
-                                                {index === 0 ? "COVER:" : `#${index + 1}:`}
-                                            </span>
-                                            <input type="text" value={link} onChange={(e) => handleLinkChange(index, e.target.value)} className={`w-full p-3 pl-16 bg-black border ${index === 0 ? 'border-[#00ff41]' : 'border-[#333]'} focus:border-[#00ff41] outline-none text-white text-sm transition-all`} placeholder="Paste URL here..." />
-                                        </div>
-                                        {imageLinks.length > 1 && (
-                                            <button type="button" onClick={() => removeLinkField(index)} className="px-3 bg-red-900/30 text-red-500 border border-red-900 hover:bg-red-600 hover:text-white transition-colors">X</button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* Submit Button */}
-                        <button disabled={loading} type="submit" className={`font-bold p-4 mt-2 transition-all uppercase shadow-lg ${editingPost ? 'bg-yellow-600 text-black hover:bg-yellow-500 shadow-yellow-900/50' : 'bg-[#00ff41] text-black hover:bg-white shadow-[#00ff41]/30'}`}>
-                            {loading ? "PROCESSING..." : (editingPost ? "UPDATE LOG ENTRY" : "PUBLISH NEW ENTRY")}
+                        <button disabled={loading} className={`w-full font-bold py-3 mt-2 ${editingPost ? 'bg-yellow-600 hover:bg-yellow-500 text-white' : 'bg-pink-600 dark:bg-[#00ff41] text-white dark:text-black hover:opacity-90'}`}>
+                            {loading ? "PROCESSING..." : (editingPost ? "UPDATE POST" : "CREATE POST")}
                         </button>
+                        {editingPost && <button type="button" onClick={() => { setEditingPost(null); setTitle(""); setContent(""); setImageLinks([""]); }} className="w-full bg-gray-500 text-white py-2 mt-2">CANCEL EDIT</button>}
                     </form>
                 </div>
 
-                {/* CỘT PHẢI: LIST */}
-                <div className="lg:col-span-1">
-                    <div className="bg-[#0a0a0a] border border-[#333] h-[80vh] flex flex-col shadow-lg">
-                        <div className="p-4 border-b border-[#333] bg-black">
-                            <h2 className="text-[#00ff41] text-xl uppercase font-bold">Database Logs</h2>
-                            <p className="text-gray-600 text-xs mt-1">Total entries: {posts.length}</p>
-                        </div>
-                        
-                        <div className="overflow-y-auto p-4 flex-1 custom-scrollbar space-y-3">
-                            {posts.map((post) => (
-                                <div key={post.id} className={`p-3 border bg-black transition-all group ${editingPost?.id === post.id ? 'border-yellow-500 bg-yellow-900/20' : 'border-[#333] hover:border-[#00ff41]'}`}>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className={`font-bold text-sm line-clamp-1 w-[80%] ${editingPost?.id === post.id ? 'text-yellow-500' : 'text-white group-hover:text-[#00ff41]'}`}>{post.title}</h3>
-                                        <span className="text-[9px] bg-[#222] px-1 text-gray-400 border border-[#333]">{post.language}</span>
-                                    </div>
-                                    <div className="flex justify-between items-end">
-                                        <div className="text-[10px] text-gray-500">
-                                            <div className="uppercase mb-1">{post.tag}</div>
+                {/* LIST */}
+                <div className="bg-white/90 dark:bg-[#0a0a0a] p-6 border border-pink-300 dark:border-[#333] shadow-lg max-h-[800px] overflow-y-auto">
+                    <h2 className="text-xl mb-4 text-gray-700 dark:text-white font-bold border-b border-gray-200 dark:border-[#333] pb-2">POSTS ({posts.length})</h2>
+                    <div className="space-y-4">
+                        {posts.map(post => (
+                            <div key={post.id} className="border border-gray-200 dark:border-[#333] p-3 hover:border-pink-400 dark:hover:border-[#00ff41] transition-colors bg-white dark:bg-black">
+                                <div className="flex justify-between items-start">
+                                    <div>
+                                        <h3 className="font-bold text-gray-800 dark:text-white truncate max-w-[200px]">{post.title}</h3>
+                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex gap-3">
+                                            <div className="uppercase mb-1 bg-gray-100 dark:bg-[#222] px-1">{post.tag}</div>
                                             <div>{new Date(post.createdAt).toLocaleDateString()}</div>
                                         </div>
-                                        <div className="flex gap-2">
-                                            {/* ĐÃ THÊM LẠI NÚT VIEW Ở ĐÂY */}
-                                            <a href={`/blog/${post.id}`} target="_blank" className="text-[10px] text-gray-400 hover:text-white border border-[#333] px-2 py-1 flex items-center">
-                                                VIEW
-                                            </a>
-                                            <button onClick={() => handleStartEdit(post)} className="text-[10px] text-yellow-500 hover:text-yellow-300 border border-yellow-900/50 px-2 py-1 bg-yellow-900/20">
-                                                EDIT
-                                            </button>
-                                            <button onClick={() => handleDelete(post.id)} className="text-[10px] text-red-500 border border-red-900 px-2 py-1 hover:bg-red-900 hover:text-white transition-colors">DEL</button>
-                                        </div>
+                                    </div>
+                                    <div className="flex gap-2">
+                                        <a href={`/blog/${post.id}`} target="_blank" className="text-[10px] text-blue-500 border border-blue-500 px-2 py-1 hover:bg-blue-500 hover:text-white transition">VIEW</a>
+                                        <button onClick={() => handleStartEdit(post)} className="text-[10px] text-yellow-600 border border-yellow-600 px-2 py-1 hover:bg-yellow-600 hover:text-white transition">EDIT</button>
+                                        <button onClick={() => handleDelete(post.id)} className="text-[10px] text-red-500 border border-red-500 px-2 py-1 hover:bg-red-500 hover:text-white transition">DEL</button>
                                     </div>
                                 </div>
-                            ))}
-                        </div>
+                            </div>
+                        ))}
                     </div>
                 </div>
             </div>

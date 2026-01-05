@@ -1,5 +1,4 @@
 import { getPostById } from "@/lib/actions";
-import MatrixRain from "@/components/MatrixRain";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -9,74 +8,56 @@ export default async function BlogDetail({ params }: { params: any }) {
     const { id } = await params;
     const post = await getPostById(id);
 
-    if (!post) return <div className="text-white text-center pt-20 font-mono text-2xl">ERROR 404: DATA NOT FOUND</div>;
+    if (!post) return <div className="text-center pt-20 font-mono text-2xl text-red-500">ERROR 404: DATA NOT FOUND</div>;
 
     let images: string[] = [];
-    try {
-        images = JSON.parse(post.images);
-    } catch {
-        images = [];
-    }
+    try { images = JSON.parse(post.images); } catch { images = []; }
 
     return (
-        // SỬA: Thêm 'flex flex-col items-center' để căn giữa toàn bộ nội dung
-        <main className="min-h-screen relative font-mono bg-black text-white selection:bg-[#00ff41] selection:text-black flex flex-col items-center">
-            <div className="fixed top-0 left-0 w-full h-full -z-10 opacity-30 pointer-events-none">
-                <MatrixRain />
-            </div>
+        <main className="min-h-screen relative font-mono text-gray-800 dark:text-white flex flex-col items-center">
             
-            <div className="fixed top-5 left-5 z-50">
-                <Link href="/blog" className="bg-black border border-[#00ff41] text-[#00ff41] px-4 py-2 hover:bg-[#00ff41] hover:text-black transition-colors font-bold uppercase text-sm">
-                    &lt; Back to Archives
+            <div className="fixed top-20 left-5 z-40 md:top-24">
+                <Link href="/blog" className="bg-white/80 dark:bg-black border border-pink-500 dark:border-[#00ff41] text-pink-600 dark:text-[#00ff41] px-4 py-2 hover:bg-pink-500 dark:hover:bg-[#00ff41] hover:text-white dark:hover:text-black transition-colors font-bold uppercase text-sm backdrop-blur-sm shadow-sm">
+                    &lt; Back
                 </Link>
             </div>
 
-            {/* SỬA: Tăng max-w-5xl và w-full để bài viết rộng hơn và nằm giữa */}
-            <article className="relative z-10 w-full max-w-5xl pt-28 pb-20 px-6">
-                
-                {/* Header bài viết */}
-                <div className="border-l-4 border-[#00ff41] pl-6 mb-10 bg-[rgba(20,20,20,0.8)] p-6 border-y border-r border-[#333]">
-                    <h1 className="text-3xl md:text-5xl font-bold text-white mb-4 uppercase tracking-wide leading-tight shadow-[#00ff41] drop-shadow-sm">
+            <article className="relative z-10 w-full max-w-5xl pt-32 pb-20 px-6">
+                <div className="border-l-4 border-pink-500 dark:border-[#00ff41] pl-6 mb-10 bg-white/60 dark:bg-[rgba(20,20,20,0.8)] p-6 shadow-lg backdrop-blur-md">
+                    <h1 className="text-3xl md:text-5xl font-bold text-gray-900 dark:text-white mb-4 uppercase tracking-wide leading-tight">
                         {post.title}
                     </h1>
-                    <div className="flex flex-wrap gap-4 text-[#00ff41] text-xs md:text-sm font-mono uppercase tracking-widest">
-                        <span className="bg-[#003300] px-2 py-1 border border-[#00ff41]">DATE: {post.createdAt.toLocaleDateString()}</span>
-                        <span className="bg-[#003300] px-2 py-1 border border-[#00ff41]">TAG: {post.tag || "GENERAL"}</span>
-                        <span className="bg-[#003300] px-2 py-1 border border-[#00ff41]">LANG: {post.language || "VI"}</span>
+                    <div className="flex flex-wrap gap-4 text-pink-600 dark:text-[#00ff41] text-xs md:text-sm font-mono uppercase tracking-widest">
+                        <span className="bg-pink-50 dark:bg-[#003300] px-2 py-1 border border-pink-300 dark:border-[#00ff41]">DATE: {post.createdAt.toLocaleDateString()}</span>
+                        <span className="bg-pink-50 dark:bg-[#003300] px-2 py-1 border border-pink-300 dark:border-[#00ff41]">TAG: {post.tag || "GENERAL"}</span>
                     </div>
                 </div>
 
-                {/* Nội dung bài viết (Sửa lỗi className bằng cách bọc div ngoài) */}
-                <div className="bg-[rgba(10,10,10,0.9)] p-8 border border-[#333] mb-12 shadow-[0_0_30px_rgba(0,0,0,0.5)]">
-                    <div className="prose prose-invert prose-lg max-w-none 
-                        prose-headings:text-[#00ff41] prose-headings:font-bold prose-headings:uppercase prose-headings:border-b prose-headings:border-[#333] prose-headings:pb-2 prose-headings:mt-8
-                        prose-p:text-[#e0e0e0] prose-p:leading-relaxed prose-p:mb-4
-                        prose-a:text-[#00ff41] prose-a:no-underline hover:prose-a:underline
-                        prose-strong:text-white prose-strong:font-extrabold
-                        prose-code:text-[#00ff41] prose-code:bg-[#111] prose-code:px-1 prose-code:border prose-code:border-[#333] prose-code:font-mono
-                        prose-pre:bg-[#050505] prose-pre:border prose-pre:border-[#333] prose-pre:p-4
-                        prose-li:text-[#e0e0e0] prose-li:marker:text-[#00ff41]
-                        prose-blockquote:border-l-4 prose-blockquote:border-[#00ff41] prose-blockquote:text-gray-400 prose-blockquote:bg-[#111] prose-blockquote:py-2 prose-blockquote:px-4 prose-blockquote:italic">
-                        
-                        {/* ReactMarkdown nằm trơn tru trong div */}
+                {/* Nội dung Markdown */}
+                <div className="bg-white/90 dark:bg-[rgba(10,10,10,0.9)] p-8 border border-pink-200 dark:border-[#333] mb-12 shadow-xl backdrop-blur-sm">
+                    <div className="prose prose-lg max-w-none dark:prose-invert
+                        prose-headings:text-pink-600 dark:prose-headings:text-[#00ff41] 
+                        prose-a:text-pink-600 dark:prose-a:text-[#00ff41]
+                        prose-strong:text-black dark:prose-strong:text-white
+                        prose-code:text-pink-700 dark:prose-code:text-[#00ff41] prose-code:bg-pink-50 dark:prose-code:bg-[#111] prose-code:px-1 prose-code:border prose-code:border-pink-200 dark:prose-code:border-[#333]
+                        prose-pre:bg-gray-900 dark:prose-pre:bg-[#050505] prose-pre:border prose-pre:border-[#333]
+                        prose-blockquote:border-pink-500 dark:prose-blockquote:border-[#00ff41] prose-blockquote:bg-gray-50 dark:prose-blockquote:bg-[#111]">
                         <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {post.content}
                         </ReactMarkdown>
                     </div>
                 </div>
 
-                {/* Ảnh đính kèm */}
                 {images.length > 0 && (
                     <div className="space-y-8">
-                        <h3 className="text-2xl text-[#00ff41] border-b border-[#008f11] pb-2 mb-6 inline-block font-mono">
+                        <h3 className="text-2xl text-pink-600 dark:text-[#00ff41] border-b border-pink-300 dark:border-[#008f11] pb-2 mb-6 inline-block font-mono">
                             {`// EVIDENCE_FILES (${images.length})`}
                         </h3>
                         <div className="grid grid-cols-1 gap-8">
                             {images.map((img, idx) => (
-                                <div key={idx} className="group border border-[#333] p-2 bg-black hover:border-[#00ff41] transition-all duration-500 shadow-lg">
-                                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                                    <img src={img} alt={`Evidence ${idx}`} className="w-full h-auto object-cover opacity-90 group-hover:opacity-100" />
-                                    <div className="text-right text-[#00ff41] text-[10px] mt-2 font-mono">FIG_0{idx + 1}.JPG</div>
+                                <div key={idx} className="group border border-pink-200 dark:border-[#333] p-2 bg-white dark:bg-black hover:border-pink-500 dark:hover:border-[#00ff41] transition-all shadow-lg">
+                                    <img src={img} alt={`Evidence ${idx}`} className="w-full h-auto object-cover opacity-95 group-hover:opacity-100" />
+                                    <div className="text-right text-pink-500 dark:text-[#00ff41] text-[10px] mt-2 font-mono">FIG_0{idx + 1}.JPG</div>
                                 </div>
                             ))}
                         </div>
