@@ -71,8 +71,10 @@ export default function Home() {
         getSectionContent("skills"),
         getSectionContent("profile"),
         getSectionContent("experience"),
-        getSectionContent("contact") // New
+        getSectionContent("contact")
     ]).then(([about, career, skills, profile, experience, contact]) => {
+        console.log("DATA FROM DB:", { profile, experience, contact }); // DEBUG LOG
+
         const sections: Record<string, SectionData> = {};
         if (about) sections.about = about as unknown as SectionData;
         if (career) sections.career = career as unknown as SectionData;
@@ -80,6 +82,7 @@ export default function Home() {
         if (profile) sections.profile = profile as unknown as SectionData;
         if (experience) sections.experience = experience as unknown as SectionData;
         if (contact) sections.contact = contact as unknown as SectionData;
+        
         setDynamicSections(sections);
     });
   }, []);
@@ -98,10 +101,13 @@ export default function Home() {
   const getSectionText = (key: string, fallbackText: string) => {
     const data = dynamicSections[key];
     if (!data) return fallbackText;
-    if (currentLang === 'en') return data.contentEn || fallbackText;
-    if (currentLang === 'vi') return data.contentVi || fallbackText;
-    if (currentLang === 'jp') return data.contentJp || fallbackText;
-    return fallbackText;
+    
+    let content = "";
+    if (currentLang === 'en') content = data.contentEn;
+    else if (currentLang === 'vi') content = data.contentVi;
+    else if (currentLang === 'jp') content = data.contentJp;
+
+    return content || fallbackText; // Nếu DB có nhưng content rỗng thì vẫn dùng fallback
   };
 
   // Helper lấy cấu trúc Box (trả về mảng Box hoặc null nếu lỗi/không có)
@@ -114,9 +120,10 @@ export default function Home() {
     else if (currentLang === 'vi') jsonStr = data.contentVi;
     else if (currentLang === 'jp') jsonStr = data.contentJp;
 
-    if (!jsonStr) return null;
+    if (!jsonStr || jsonStr === "[]") return null; // Nếu chuỗi rỗng hoặc mảng rỗng -> Fallback
     try {
-        return JSON.parse(jsonStr);
+        const parsed = JSON.parse(jsonStr);
+        return parsed.length > 0 ? parsed : null;
     } catch {
         return null;
     }
