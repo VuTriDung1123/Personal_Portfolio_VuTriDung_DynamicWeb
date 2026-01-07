@@ -12,28 +12,31 @@ import TopNav from "@/components/TopNav";
 import { translations, Lang } from "@/lib/data"; 
 import { getPostsByTag, getAllPosts, getSectionContent } from "@/lib/actions"; 
 
-// 1. Định nghĩa kiểu dữ liệu chuẩn
+// TYPES
 type Post = {
   id: string;
   title: string;
   images: string;
-  createdAt: Date | string; // Chấp nhận cả chuỗi (khi qua mạng) và Date
+  createdAt: Date | string;
   tag?: string;
   language?: string;
   content?: string;
 };
 
-// Kiểu dữ liệu cho nội dung động (About, Career...)
 type SectionData = {
   contentEn: string;
   contentVi: string;
   contentJp: string;
 };
 
+// Type cho cấu trúc Box (Profile/Experience)
+type BoxItem = { label: string; value: string; };
+type SectionBox = { id: string; title: string; items: BoxItem[]; };
+
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   
-  // 2. Thay thế any[] bằng Post[]
+  // Data States
   const [dbUniProjects, setDbUniProjects] = useState<Post[]>([]);
   const [dbPersonalProjects, setDbPersonalProjects] = useState<Post[]>([]);
   const [dbItEvents, setDbItEvents] = useState<Post[]>([]);
@@ -42,17 +45,14 @@ export default function Home() {
   const [latestPosts, setLatestPosts] = useState<Post[]>([]);
   const [dbAchievements, setDbAchievements] = useState<Post[]>([]);
 
-  // 3. Định nghĩa kiểu cho dynamicSections
+  // Dynamic Content State
   const [dynamicSections, setDynamicSections] = useState<Record<string, SectionData>>({});
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
-  
-  // 4. Lấy kiểu dữ liệu của biến t từ file data gốc thay vì dùng any
   const t = translations[currentLang]; 
 
   useEffect(() => {
     // 1. Fetch Blogs
-    // Ép kiểu (as Post[]) để TypeScript không báo lỗi khi dữ liệu từ Server trả về
     getPostsByTag("uni_projects").then(data => setDbUniProjects(data as unknown as Post[]));
     getPostsByTag("personal_projects").then(data => setDbPersonalProjects(data as unknown as Post[]));
     getPostsByTag("it_events").then(data => setDbItEvents(data as unknown as Post[]));
@@ -64,17 +64,20 @@ export default function Home() {
         if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3) as unknown as Post[]);
     });
 
-    // 2. Fetch Dynamic Sections
+    // 2. Fetch Dynamic Sections (Thêm profile và experience)
     Promise.all([
         getSectionContent("about"),
         getSectionContent("career"),
-        getSectionContent("skills")
-    ]).then(([about, career, skills]) => {
-        // Lọc bỏ null và ép kiểu
+        getSectionContent("skills"),
+        getSectionContent("profile"),    // New
+        getSectionContent("experience")  // New
+    ]).then(([about, career, skills, profile, experience]) => {
         const sections: Record<string, SectionData> = {};
         if (about) sections.about = about as unknown as SectionData;
         if (career) sections.career = career as unknown as SectionData;
         if (skills) sections.skills = skills as unknown as SectionData;
+        if (profile) sections.profile = profile as unknown as SectionData;
+        if (experience) sections.experience = experience as unknown as SectionData;
         setDynamicSections(sections);
     });
   }, []);
@@ -86,12 +89,10 @@ export default function Home() {
     let months = now.getMonth() - birthDate.getMonth();
     const days = now.getDate() - birthDate.getDate();
     if (months < 0 || (months === 0 && days < 0)) { years--; months += 12; }
-    
-    if (currentLang === 'vi') return `${years} Năm, ${months} Tháng`;
-    if (currentLang === 'jp') return `${years} 歳, ${months} ヶ月`;
-    return `${years} Years, ${months} Months`;
+    return currentLang === 'vi' ? `${years} Năm` : (currentLang === 'jp' ? `${years} 歳` : `${years} Years`);
   };
 
+  // Helper lấy Text thường
   const getSectionText = (key: string, fallbackText: string) => {
     const data = dynamicSections[key];
     if (!data) return fallbackText;
@@ -99,6 +100,24 @@ export default function Home() {
     if (currentLang === 'vi') return data.contentVi || fallbackText;
     if (currentLang === 'jp') return data.contentJp || fallbackText;
     return fallbackText;
+  };
+
+  // Helper lấy cấu trúc Box (trả về mảng Box hoặc null nếu lỗi/không có)
+  const getSectionBoxes = (key: string): SectionBox[] | null => {
+    const data = dynamicSections[key];
+    if (!data) return null;
+
+    let jsonStr = "";
+    if (currentLang === 'en') jsonStr = data.contentEn;
+    else if (currentLang === 'vi') jsonStr = data.contentVi;
+    else if (currentLang === 'jp') jsonStr = data.contentJp;
+
+    if (!jsonStr) return null;
+    try {
+        return JSON.parse(jsonStr);
+    } catch {
+        return null;
+    }
   };
 
   useEffect(() => {
@@ -132,6 +151,57 @@ export default function Home() {
     }
   };
 
+  // Dữ liệu fallback cho Profile nếu DB chưa có
+  const renderFallbackProfile = () => (
+    <>
+        <div className="profile-box">
+            <h3>{t.box_personal}</h3>
+            <ul className="profile-list">
+                <li><span className="label">{t.lbl_name}</span> <span className="value highlight">Vũ Trí Dũng</span></li>
+                <li><span className="label">{t.lbl_dob}</span> <span className="value">23/11/2005</span></li>
+                <li><span className="label">{t.lbl_age}</span> <span className="value">{calculateAge()}</span></li>
+                <li><span className="label">{t.lbl_nation}</span> <span className="value">{t.val_nation}</span></li>
+                <li><span className="label">{t.lbl_job}</span> <span className="value">{t.val_job}</span></li>
+            </ul>
+        </div>
+        <div className="profile-box">
+            <h3>{t.box_status}</h3>
+            <ul className="profile-list">
+                <li><span className="label">{t.lbl_address}</span> <span className="value">{t.val_address}</span></li>
+                <li><span className="label">{t.lbl_lang}</span> <span className="value">{t.val_lang}</span></li>
+                <li><span className="label">{t.lbl_status}</span> <span className="value highlight">{t.val_status}</span></li>
+            </ul>
+        </div>
+    </>
+  );
+
+  // Dữ liệu fallback cho Experience nếu DB chưa có
+  const renderFallbackExperience = () => (
+    <div className="profile-container">
+        <div className="profile-box">
+            <h3>{t.box_it_exp}</h3>
+            <ul className="profile-list">
+                <li><span className="label">{t.exp_time_1}</span> <span className="value highlight">{t.exp_role_1}</span></li>
+                <li className="exp-desc">{t.exp_desc_1}</li>
+                <li><span className="label">2022-2023:</span> <span className="value">{t.exp_role_2}</span></li>
+                <li className="exp-desc">{t.exp_desc_2}</li>
+            </ul>
+        </div>
+        <div className="profile-box">
+            <h3>{t.box_non_it_exp}</h3>
+            <ul className="profile-list">
+                <li><span className="label">2021-2022:</span> <span className="value">{t.exp_role_3}</span></li>
+                <li className="exp-desc">{t.exp_desc_3}</li>
+                <li><span className="label">2020:</span> <span className="value">{t.exp_role_4}</span></li>
+                <li className="exp-desc">{t.exp_desc_4}</li>
+            </ul>
+        </div>
+    </div>
+  );
+
+  const profileBoxes = getSectionBoxes("profile");
+  const experienceBoxes = getSectionBoxes("experience");
+
   return (
     <main>
         <MatrixRain />
@@ -157,41 +227,35 @@ export default function Home() {
             </div>
         </section>
 
-        {/* 01. ABOUT (Dynamic) */}
+        {/* 01. ABOUT (Dynamic Text) */}
         <section id="about" className="content-section">
             <h2>{t.sec_about}</h2>
             <p style={{whiteSpace: 'pre-line'}}>{getSectionText("about", `${t.about_line1}\n${t.about_line2}`)}</p>
         </section>
 
-        {/* 02. PROFILE */}
+        {/* 02. PROFILE (Dynamic Boxes) */}
         <section id="profile" className="content-section">
             <h2>{t.sec_profile}</h2>
             <div className="profile-container">
-                <div className="profile-box">
-                    <h3>{t.box_personal}</h3>
-                    <ul className="profile-list">
-                        <li><span className="label">{t.lbl_name}</span> <span className="value highlight">Vũ Trí Dũng</span></li>
-                        <li><span className="label">{t.lbl_dob}</span> <span className="value">23/11/2005</span></li>
-                        <li><span className="label">{t.lbl_age}</span> <span className="value">{calculateAge()}</span></li>
-                        <li><span className="label">{t.lbl_nation}</span> <span className="value">{t.val_nation}</span></li>
-                        <li><span className="label">{t.lbl_job}</span> <span className="value">{t.val_job}</span></li>
-                    </ul>
-                </div>
-                <div className="profile-box">
-                    <h3>{t.box_status}</h3>
-                    <ul className="profile-list">
-                        <li><span className="label">{t.lbl_address}</span> <span className="value">{t.val_address}</span></li>
-                        <li><span className="label">{t.lbl_lang}</span> <span className="value">{t.val_lang}</span></li>
-                        <li><span className="label">{t.lbl_status}</span> <span className="value highlight">{t.val_status}</span></li>
-                    </ul>
-                </div>
-                <div className="profile-box">
-                    <h3>{t.box_other}</h3>
-                    <ul className="profile-list">
-                        <li><span className="label">{t.lbl_other_1}</span> <span className="value">{t.val_other_1}</span></li>
-                        <li><span className="label">{t.lbl_other_2}</span> <span className="value">{t.val_other_2}</span></li>
-                    </ul>
-                </div>
+                {profileBoxes && profileBoxes.length > 0 ? (
+                    // Nếu có DB -> Render từ DB
+                    profileBoxes.map((box) => (
+                        <div key={box.id} className="profile-box">
+                            <h3>{box.title}</h3>
+                            <ul className="profile-list">
+                                {box.items.map((item, idx) => (
+                                    <li key={idx}>
+                                        <span className="label">{item.label}</span>
+                                        <span className="value">{item.value}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))
+                ) : (
+                    // Nếu không có DB -> Render fallback
+                    renderFallbackProfile()
+                )}
             </div>
         </section>
 
@@ -235,7 +299,7 @@ export default function Home() {
             </div>
         </section>
 
-        {/* 04. CAREER (Dynamic) */}
+        {/* 04. CAREER (Dynamic Text) */}
         <section id="career" className="content-section">
             <h2>{t.sec_career}</h2>
             <p style={{whiteSpace: 'pre-line'}}>{getSectionText("career", t.career_desc)}</p>
@@ -263,35 +327,35 @@ export default function Home() {
             </div>
         </section>
 
-        {/* 06. SKILLS (Dynamic) */}
+        {/* 06. SKILLS (Dynamic Text) */}
         <section id="skills" className="content-section">
             <h2>{t.sec_skills}</h2>
             <p style={{whiteSpace: 'pre-line'}}>{getSectionText("skills", "HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker.")}</p>
         </section>
 
-        {/* 07. EXPERIENCE */}
+        {/* 07. EXPERIENCE (Dynamic Boxes) */}
         <section id="experience" className="content-section">
             <h2>{t.sec_exp}</h2>
-            <div className="profile-container">
-                <div className="profile-box">
-                    <h3>{t.box_it_exp}</h3>
-                    <ul className="profile-list">
-                        <li><span className="label">{t.exp_time_1}</span> <span className="value highlight">{t.exp_role_1}</span></li>
-                        <li className="exp-desc">{t.exp_desc_1}</li>
-                        <li><span className="label">2022-2023:</span> <span className="value">{t.exp_role_2}</span></li>
-                        <li className="exp-desc">{t.exp_desc_2}</li>
-                    </ul>
+            {experienceBoxes && experienceBoxes.length > 0 ? (
+                <div className="profile-container">
+                    {experienceBoxes.map((box) => (
+                        <div key={box.id} className="profile-box">
+                            <h3>{box.title}</h3>
+                            <ul className="profile-list">
+                                {box.items.map((item, idx) => (
+                                    <li key={idx}>
+                                        {/* CSS class này để nếu value dài quá nó sẽ xuống dòng đẹp hơn */}
+                                        <span className="label">{item.label}</span>
+                                        <span className="value">{item.value}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
                 </div>
-                <div className="profile-box">
-                    <h3>{t.box_non_it_exp}</h3>
-                    <ul className="profile-list">
-                        <li><span className="label">2021-2022:</span> <span className="value">{t.exp_role_3}</span></li>
-                        <li className="exp-desc">{t.exp_desc_3}</li>
-                        <li><span className="label">2020:</span> <span className="value">{t.exp_role_4}</span></li>
-                        <li className="exp-desc">{t.exp_desc_4}</li>
-                    </ul>
-                </div>
-            </div>
+            ) : (
+                renderFallbackExperience()
+            )}
         </section>
 
         {/* 08. PROJECTS */}
