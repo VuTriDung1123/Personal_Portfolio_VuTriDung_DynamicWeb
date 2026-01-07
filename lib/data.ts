@@ -27,7 +27,7 @@ export const translations = {
     lbl_jp_name: "Japanese Name:",
     
     sec_about: "01. ABOUT ME",
-    about_line1: "I am a third-year IT student at HUTECH University with a strong passion for coding and problem-solving.",
+    about_line1: "I am a third-year IT student at UTH University with a strong passion for coding and problem-solving. And I love mathematics too.",
     about_line2: "I love turning complex ideas into reality through elegant code.",
     
     sec_profile: "02. PROFILE",
@@ -121,7 +121,7 @@ export const translations = {
     lbl_jp_name: "Tên Tiếng Nhật:",
     
     sec_about: "01. GIỚI THIỆU",
-    about_line1: "Tôi là sinh viên năm 3 ngành CNTT tại HUTECH với niềm đam mê mãnh liệt với lập trình.",
+    about_line1: "Tôi là sinh viên năm 3 ngành CNTT tại UTH với niềm đam mê mãnh liệt với lập trình. Và tôi cũng rất thích toán học.",
     about_line2: "Tôi thích biến những ý tưởng phức tạp thành hiện thực thông qua những dòng code tinh tế.",
     
     sec_profile: "02. HỒ SƠ",
@@ -214,7 +214,7 @@ export const translations = {
     lbl_jp_name: "日本名:",
     
     sec_about: "01. 私について",
-    about_line1: "私はHUTECH大学の3年生で、コーディングと問題解決に強い情熱を持っています。",
+    about_line1: "私はUTH大学の3年生で、コーディングと問題解決に強い情熱を持っています。数学も好きです。",
     about_line2: "複雑なアイデアをエレガントなコードで実現することが大好きです。",
     
     sec_profile: "02. プロフィール",
@@ -282,74 +282,4 @@ export const translations = {
     
     typewriter_texts: ["ソフトウェアエンジニア", "Web開発者", "セキュリティ愛好家", "ゲーマー"]
   }
-};
-
-// --- DỮ LIỆU TĨNH ---
-export const projectsData: Record<string, any> = {
-    uni_1: {
-        en: { title: "University Project A", desc: "A great project", tech: "C#, .NET", images: [], link: "#" },
-        vi: { title: "Dự án Đại học A", desc: "Dự án tuyệt vời", tech: "C#, .NET", images: [], link: "#" },
-        jp: { title: "大学プロジェクトA", desc: "素晴らしいプロジェクト", tech: "C#, .NET", images: [], link: "#" }
-    },
-    uni_2: {
-        en: { title: "University Project B", desc: "Another project", tech: "Java", images: [], link: "#" },
-        vi: { title: "Dự án Đại học B", desc: "Dự án khác", tech: "Java", images: [], link: "#" },
-        jp: { title: "大学プロジェクトB", desc: "別のプロジェクト", tech: "Java", images: [], link: "#" }
-    },
-    per_1: {
-        en: { title: "Personal App X", desc: "My personal app", tech: "React Native", images: [], link: "#" },
-        vi: { title: "Ứng dụng Cá nhân X", desc: "Ứng dụng của tôi", tech: "React Native", images: [], link: "#" },
-        jp: { title: "個人アプリX", desc: "私のアプリ", tech: "React Native", images: [], link: "#" }
-    },
-    per_2: {
-        en: { title: "Website Portfolio", desc: "This website", tech: "Next.js", images: [], link: "#" },
-        vi: { title: "Website Portfolio", desc: "Trang web này", tech: "Next.js", images: [], link: "#" },
-        jp: { title: "ポートフォリオ", desc: "このウェブサイト", tech: "Next.js", images: [], link: "#" }
-    }
-};
-
-export const certData: Record<string, any> = {
-    lang_1: {
-        en: { title: "IELTS 7.0", issuer: "British Council", images: [] },
-        vi: { title: "IELTS 7.0", issuer: "British Council", images: [] },
-        jp: { title: "IELTS 7.0", issuer: "British Council", images: [] }
-    },
-    lang_2: {
-        en: { title: "JLPT N3", issuer: "Japan Foundation", images: [] },
-        vi: { title: "JLPT N3", issuer: "Japan Foundation", images: [] },
-        jp: { title: "JLPT N3", issuer: "Japan Foundation", images: [] }
-    },
-    lang_3: {
-        en: { title: "TOEIC 800", issuer: "ETS", images: [] },
-        vi: { title: "TOEIC 800", issuer: "ETS", images: [] },
-        jp: { title: "TOEIC 800", issuer: "ETS", images: [] }
-    },
-    tech_1: {
-        en: { title: "AWS Cloud Practitioner", issuer: "Amazon", images: [] },
-        vi: { title: "AWS Cloud Practitioner", issuer: "Amazon", images: [] },
-        jp: { title: "AWS Cloud Practitioner", issuer: "Amazon", images: [] }
-    },
-    tech_2: {
-        en: { title: "Google Cyber Security", issuer: "Google", images: [] },
-        vi: { title: "Google Cyber Security", issuer: "Google", images: [] },
-        jp: { title: "Google Cyber Security", issuer: "Google", images: [] }
-    },
-    tech_3: {
-        en: { title: "Meta Backend Dev", issuer: "Meta", images: [] },
-        vi: { title: "Meta Backend Dev", issuer: "Meta", images: [] },
-        jp: { title: "Meta Backend Dev", issuer: "Meta", images: [] }
-    }
-};
-
-export const galleryData: Record<string, any> = {
-    it_1: {
-        en: { title: "Hackathon 2024", images: [] },
-        vi: { title: "Hackathon 2024", images: [] },
-        jp: { title: "ハッカソン 2024", images: [] }
-    },
-    it_2: {
-        en: { title: "Tech Workshop", images: [] },
-        vi: { title: "Tech Workshop", images: [] },
-        jp: { title: "技術ワークショップ", images: [] }
-    }
 };
