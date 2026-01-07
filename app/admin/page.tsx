@@ -1,5 +1,6 @@
 "use client";
 
+
 import { useState, useEffect } from "react";
 import { checkAdmin, createPost, deletePost, getAllPosts, updatePost, getSectionContent, saveSectionContent } from "@/lib/actions";
 
@@ -87,10 +88,11 @@ export default function AdminPage() {
     if (editingPost) {
         await updatePost(formData);
         alert("Cập nhật bài viết thành công!");
+
         setEditingPost(null);
     } else {
         await createPost(formData);
-        alert("Đăng bài thành công!");
+        alert("POST CREATED!");
     }
     setImages([]);
     const updated = await getAllPosts();
