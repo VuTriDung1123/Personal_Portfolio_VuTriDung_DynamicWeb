@@ -20,7 +20,7 @@ export default function TopNav({ t, currentLang, setCurrentLang }: TopNavProps) 
 
   const navItems = [
     'home', 'about', 'profile', 'certificates', 'career', 
-    'hobby', 'skills', 'experience', 'projects', 
+    'achievements', 'skills', 'experience', 'projects', 
     'blog',
     'gallery', 'contact'
   ];
