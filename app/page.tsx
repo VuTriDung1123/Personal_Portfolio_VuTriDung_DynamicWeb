@@ -10,9 +10,9 @@ import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
 
 import { translations, Lang } from "@/lib/data"; 
-import { getPostsByTag, getAllPosts, getSectionContent } from "@/lib/actions"; 
+import { getPostsByTag, getAllPosts, getSectionContent } from "@/lib/actions"; // [QUAN TRỌNG] Phải có import getSectionContent
 
-// TYPES
+// --- TYPES ---
 type Post = {
   id: string;
   title: string;
@@ -45,14 +45,15 @@ export default function Home() {
   const [latestPosts, setLatestPosts] = useState<Post[]>([]);
   const [dbAchievements, setDbAchievements] = useState<Post[]>([]);
 
-  // Dynamic Content State
+  // Dynamic Content State (Lưu dữ liệu About, Profile, Contact...)
   const [dynamicSections, setDynamicSections] = useState<Record<string, SectionData>>({});
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
-  const t = translations[currentLang]; 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const t = translations[currentLang] as any; 
 
   useEffect(() => {
-    // 1. Fetch Blogs
+    // 1. Fetch Blogs & Projects
     getPostsByTag("uni_projects").then(data => setDbUniProjects(data as unknown as Post[]));
     getPostsByTag("personal_projects").then(data => setDbPersonalProjects(data as unknown as Post[]));
     getPostsByTag("it_events").then(data => setDbItEvents(data as unknown as Post[]));
@@ -64,17 +65,15 @@ export default function Home() {
         if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3) as unknown as Post[]);
     });
 
-    // 2. Fetch Dynamic Sections (Thêm contact)
+    // 2. Fetch Dynamic Sections (QUAN TRỌNG: Lấy dữ liệu các mục tĩnh từ DB)
     Promise.all([
         getSectionContent("about"),
         getSectionContent("career"),
         getSectionContent("skills"),
         getSectionContent("profile"),
         getSectionContent("experience"),
-        getSectionContent("contact")
+        getSectionContent("contact") 
     ]).then(([about, career, skills, profile, experience, contact]) => {
-        console.log("DATA FROM DB:", { profile, experience, contact }); // DEBUG LOG
-
         const sections: Record<string, SectionData> = {};
         if (about) sections.about = about as unknown as SectionData;
         if (career) sections.career = career as unknown as SectionData;
@@ -82,7 +81,6 @@ export default function Home() {
         if (profile) sections.profile = profile as unknown as SectionData;
         if (experience) sections.experience = experience as unknown as SectionData;
         if (contact) sections.contact = contact as unknown as SectionData;
-        
         setDynamicSections(sections);
     });
   }, []);
@@ -94,10 +92,13 @@ export default function Home() {
     let months = now.getMonth() - birthDate.getMonth();
     const days = now.getDate() - birthDate.getDate();
     if (months < 0 || (months === 0 && days < 0)) { years--; months += 12; }
-    return currentLang === 'vi' ? `${years} Năm` : (currentLang === 'jp' ? `${years} 歳` : `${years} Years`);
+    
+    if (currentLang === 'vi') return `${years} Năm, ${months} Tháng`;
+    if (currentLang === 'jp') return `${years} 歳, ${months} ヶ月`;
+    return `${years} Years, ${months} Months`;
   };
 
-  // Helper lấy Text thường
+  // Helper lấy Text thường (About, Career, Skills)
   const getSectionText = (key: string, fallbackText: string) => {
     const data = dynamicSections[key];
     if (!data) return fallbackText;
@@ -107,10 +108,10 @@ export default function Home() {
     else if (currentLang === 'vi') content = data.contentVi;
     else if (currentLang === 'jp') content = data.contentJp;
 
-    return content || fallbackText; // Nếu DB có nhưng content rỗng thì vẫn dùng fallback
+    return content || fallbackText;
   };
 
-  // Helper lấy cấu trúc Box (trả về mảng Box hoặc null nếu lỗi/không có)
+  // Helper lấy cấu trúc Box (Profile, Experience, Contact)
   const getSectionBoxes = (key: string): SectionBox[] | null => {
     const data = dynamicSections[key];
     if (!data) return null;
@@ -120,7 +121,7 @@ export default function Home() {
     else if (currentLang === 'vi') jsonStr = data.contentVi;
     else if (currentLang === 'jp') jsonStr = data.contentJp;
 
-    if (!jsonStr || jsonStr === "[]") return null; // Nếu chuỗi rỗng hoặc mảng rỗng -> Fallback
+    if (!jsonStr || jsonStr === "[]") return null;
     try {
         const parsed = JSON.parse(jsonStr);
         return parsed.length > 0 ? parsed : null;
@@ -160,7 +161,7 @@ export default function Home() {
     }
   };
 
-  // Fallbacks
+  // --- FALLBACK UI (Hiển thị khi chưa có dữ liệu trong DB) ---
   const renderFallbackProfile = () => (
     <>
         <div className="profile-box">
@@ -449,7 +450,7 @@ export default function Home() {
             </div>
         </section>
 
-        {/* 10. GALLERY (Đã sửa Hardcode thành 10. GALLERY để không đổi) */}
+        {/* 10. GALLERY */}
         <section id="gallery" className="content-section">
              <h2>10. GALLERY</h2> 
              <h3 className="carousel-title">{t.cat_it_event}</h3>
@@ -471,7 +472,7 @@ export default function Home() {
             </div>
         </section>
         
-        {/* 11. CONTACT (Dynamic Boxes) */}
+        {/* 11. CONTACT (Dynamic Boxes & Correct Number) */}
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
             <h2>11. CONTACT</h2>
             {contactBoxes && contactBoxes.length > 0 ? (

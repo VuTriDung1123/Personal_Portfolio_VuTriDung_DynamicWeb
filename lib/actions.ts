@@ -88,14 +88,15 @@ export async function getPostById(id: string) {
 }
 
 // --- 3. SECTION CONTENT MANAGER (NEW) ---
-
 export async function getSectionContent(key: string) {
   try {
-    return await prisma.sectionContent.findUnique({
+    // Gọi bảng pageSection (tự động viết thường chữ cái đầu)
+    const data = await prisma.pageSection.findUnique({
       where: { sectionKey: key },
     });
+    return data;
   } catch (error) {
-    console.error("Get section error:", error);
+    console.error("Lỗi lấy section:", error);
     return null;
   }
 }
@@ -107,16 +108,17 @@ export async function saveSectionContent(formData: FormData) {
   const contentJp = formData.get("contentJp") as string;
 
   try {
-    await prisma.sectionContent.upsert({
+    await prisma.pageSection.upsert({
       where: { sectionKey: sectionKey },
       update: { contentEn, contentVi, contentJp },
       create: { sectionKey, contentEn, contentVi, contentJp },
     });
 
-    revalidatePath("/");
+    revalidatePath("/"); // F5 trang chủ
+    revalidatePath("/admin"); // F5 trang admin
     return { success: true };
   } catch (error) {
-    console.error("Save section error:", error);
+    console.error("Lỗi lưu section:", error);
     return { success: false };
   }
 }

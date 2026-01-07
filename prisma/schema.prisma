@@ -5,11 +5,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  // Dùng đường dẫn có Pool (để web chạy nhanh hơn)
-  url = env("POSTGRES_PRISMA_URL") 
-  // Dùng đường dẫn trực tiếp (Bắt buộc để chạy lệnh tạo bảng)
-  directUrl = env("POSTGRES_URL_NON_POOLING") 
+  provider  = "postgresql"
+  url       = env("POSTGRES_PRISMA_URL")
+  directUrl = env("POSTGRES_URL_NON_POOLING")
 }
 
 model Post {
@@ -17,7 +15,17 @@ model Post {
   title     String
   content   String
   tag       String?
-  language  String   @default("vi") 
+  language  String   @default("vi")
   images    String   @default("[]")
   createdAt DateTime @default(now())
+}
+
+// [ĐỔI TÊN Ở ĐÂY]
+model PageSection {
+  id          String   @id @default(uuid())
+  sectionKey  String   @unique 
+  contentEn   String   @db.Text
+  contentVi   String   @db.Text
+  contentJp   String   @db.Text
+  updatedAt   DateTime @updatedAt
 }
