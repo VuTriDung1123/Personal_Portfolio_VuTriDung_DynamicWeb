@@ -13,14 +13,13 @@ interface Post {
   images: string;
 }
 
-// Kiểu dữ liệu cho cấu trúc Box (Profile/Experience)
 interface BoxItem {
   label: string;
   value: string;
 }
 
 interface SectionBox {
-  id: string; // unique ID cho key React
+  id: string;
   title: string;
   items: BoxItem[];
 }
@@ -31,7 +30,7 @@ interface SectionData {
   contentJp: string;
 }
 
-// --- SUB-COMPONENT: BOX EDITOR (Định nghĩa bên ngoài AdminPage) ---
+// --- SUB-COMPONENT: BOX EDITOR ---
 interface BoxEditorProps {
     lang: 'en' | 'vi' | 'jp';
     data: SectionBox[];
@@ -100,34 +99,33 @@ export default function AdminPage() {
   const [isAuth, setIsAuth] = useState(false);
   const [activeTab, setActiveTab] = useState<'blog' | 'content'>('blog');
 
-  // --- BLOG STATES ---
+  // BLOG STATES
   const [posts, setPosts] = useState<Post[]>([]);
   const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [tag, setTag] = useState("my_confessions");
   const [images, setImages] = useState<string[]>([]);
 
-  // --- SECTION CONTENT STATES ---
+  // SECTION STATES
   const [sectionKey, setSectionKey] = useState("about");
   const [msg, setMsg] = useState("");
   
-  // State cho văn bản thường (About, Career, Skills)
+  // Text content
   const [secEn, setSecEn] = useState("");
   const [secVi, setSecVi] = useState("");
   const [secJp, setSecJp] = useState("");
 
-  // State cho cấu trúc Box (Profile, Experience)
+  // Box content (Profile, Experience, Contact)
   const [boxesEn, setBoxesEn] = useState<SectionBox[]>([]);
   const [boxesVi, setBoxesVi] = useState<SectionBox[]>([]);
   const [boxesJp, setBoxesJp] = useState<SectionBox[]>([]);
 
-  // Kiểm tra xem Section hiện tại có phải dạng Box không
-  const isBoxSection = sectionKey === 'profile' || sectionKey === 'experience';
+  // [CẬP NHẬT] Thêm 'contact' vào danh sách Box Section
+  const isBoxSection = sectionKey === 'profile' || sectionKey === 'experience' || sectionKey === 'contact';
 
   useEffect(() => {
     getAllPosts().then((data) => setPosts(data as unknown as Post[]));
   }, []);
 
-  // Load dữ liệu Section
   useEffect(() => {
     if (activeTab === 'content') {
         const fetchSection = async () => {
@@ -136,19 +134,16 @@ export default function AdminPage() {
                 const data = await getSectionContent(sectionKey);
                 
                 if (isBoxSection) {
-                    // Xử lý dữ liệu dạng Box JSON
                     if (data) {
                         const typedData = data as unknown as SectionData;
                         try { setBoxesEn(JSON.parse(typedData.contentEn)); } catch { setBoxesEn([]); }
                         try { setBoxesVi(JSON.parse(typedData.contentVi)); } catch { setBoxesVi([]); }
                         try { setBoxesJp(JSON.parse(typedData.contentJp)); } catch { setBoxesJp([]); }
                     } else {
-                        // Mặc định tạo 1 box rỗng nếu chưa có data
                         const defaultBox = [{ id: Date.now().toString(), title: "New Box", items: [{ label: "Label", value: "Value" }] }];
                         setBoxesEn(defaultBox); setBoxesVi(defaultBox); setBoxesJp(defaultBox);
                     }
                 } else {
-                    // Xử lý dữ liệu dạng Text thường
                     if (data) {
                         const typedData = data as unknown as SectionData;
                         setSecEn(typedData.contentEn || "");
@@ -168,14 +163,12 @@ export default function AdminPage() {
     }
   }, [sectionKey, activeTab, isBoxSection]);
 
-  // --- AUTH ---
   async function handleLogin(formData: FormData) {
     const res = await checkAdmin(formData);
     if (res.success) setIsAuth(true);
     else alert("Wrong Password!");
   }
 
-  // --- BLOG LOGIC (Giữ nguyên) ---
   const addLinkField = () => setImages([...images, ""]);
   const removeLinkField = (index: number) => { const newImg = [...images]; newImg.splice(index, 1); setImages(newImg); };
   const updateLinkField = (index: number, val: string) => { const newImg = [...images]; newImg[index] = val; setImages(newImg); };
@@ -211,49 +204,40 @@ export default function AdminPage() {
     setPosts(updated as unknown as Post[]);
   }
 
-  // --- SECTION LOGIC: BOX EDITOR HELPER FUNCTIONS ---
-  const updateBoxState = (
-    lang: 'en' | 'vi' | 'jp', 
-    newBoxes: SectionBox[]
-  ) => {
+  // Box helper functions
+  const updateBoxState = (lang: 'en' | 'vi' | 'jp', newBoxes: SectionBox[]) => {
     if (lang === 'en') setBoxesEn(newBoxes);
     if (lang === 'vi') setBoxesVi(newBoxes);
     if (lang === 'jp') setBoxesJp(newBoxes);
   };
-
   const addBox = (lang: 'en' | 'vi' | 'jp') => {
     const current = lang === 'en' ? boxesEn : (lang === 'vi' ? boxesVi : boxesJp);
     updateBoxState(lang, [...current, { id: Date.now().toString(), title: "New Box", items: [] }]);
   };
-
   const removeBox = (lang: 'en' | 'vi' | 'jp', index: number) => {
     const current = lang === 'en' ? boxesEn : (lang === 'vi' ? boxesVi : boxesJp);
     const updated = [...current];
     updated.splice(index, 1);
     updateBoxState(lang, updated);
   };
-
   const updateBoxTitle = (lang: 'en' | 'vi' | 'jp', index: number, val: string) => {
     const current = lang === 'en' ? boxesEn : (lang === 'vi' ? boxesVi : boxesJp);
     const updated = [...current];
     updated[index].title = val;
     updateBoxState(lang, updated);
   };
-
   const addItem = (lang: 'en' | 'vi' | 'jp', boxIndex: number) => {
     const current = lang === 'en' ? boxesEn : (lang === 'vi' ? boxesVi : boxesJp);
     const updated = [...current];
     updated[boxIndex].items.push({ label: "Label", value: "Value" });
     updateBoxState(lang, updated);
   };
-
   const removeItem = (lang: 'en' | 'vi' | 'jp', boxIndex: number, itemIndex: number) => {
     const current = lang === 'en' ? boxesEn : (lang === 'vi' ? boxesVi : boxesJp);
     const updated = [...current];
     updated[boxIndex].items.splice(itemIndex, 1);
     updateBoxState(lang, updated);
   };
-
   const updateItem = (lang: 'en' | 'vi' | 'jp', boxIndex: number, itemIndex: number, field: 'label' | 'value', val: string) => {
     const current = lang === 'en' ? boxesEn : (lang === 'vi' ? boxesVi : boxesJp);
     const updated = [...current];
@@ -261,22 +245,17 @@ export default function AdminPage() {
     updateBoxState(lang, updated);
   };
 
-  // Submit Section Content
   async function handleSectionSubmit(formData: FormData) {
     setMsg("Saving...");
-    
-    // Nếu là Box Section -> Chuyển object thành JSON string để lưu
     if (isBoxSection) {
         formData.set("contentEn", JSON.stringify(boxesEn));
         formData.set("contentVi", JSON.stringify(boxesVi));
         formData.set("contentJp", JSON.stringify(boxesJp));
     } else {
-        // Nếu là Text thường -> Lưu trực tiếp
         formData.set("contentEn", secEn);
         formData.set("contentVi", secVi);
         formData.set("contentJp", secJp);
     }
-
     const res = await saveSectionContent(formData);
     if (res.success) setMsg("Saved successfully!");
     else setMsg("Error saving!");
@@ -305,10 +284,8 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* --- TAB 1: BLOG --- */}
       {activeTab === 'blog' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-             {/* Form Blog (Giữ nguyên logic cũ) */}
              <div className={`p-5 border-2 ${editingPost ? 'border-yellow-400' : 'border-[#00ff41]'} bg-black/50 h-fit sticky top-10`}>
                 <h2 className={`text-2xl mb-5 border-b pb-2 ${editingPost ? 'text-yellow-400' : 'text-[#00ff41]'}`}>{editingPost ? ">> EDIT MODE" : ">> NEW ENTRY"}</h2>
                 <form action={handleBlogSubmit} className="flex flex-col gap-4">
@@ -339,7 +316,6 @@ export default function AdminPage() {
                     <div className="flex gap-2 mt-2"><button type="submit" className="flex-1 bg-[#00ff41] text-black font-bold py-2 hover:opacity-90">SUBMIT</button>{editingPost && <button type="button" onClick={() => {setEditingPost(null); setImages([]);}} className="bg-gray-700 text-white px-4">CANCEL</button>}</div>
                 </form>
             </div>
-            {/* List Blog */}
             <div className="flex flex-col gap-4">
                 <h2 className="text-2xl text-[#00ff41] border-b border-[#00ff41] pb-2">LOGS</h2>
                 {posts.map(post => (
@@ -354,7 +330,6 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* --- TAB 2: SECTIONS --- */}
       {activeTab === 'content' && (
         <div className="max-w-6xl mx-auto border border-[#00ff41] p-6 bg-black/80 shadow-[0_0_20px_rgba(0,255,65,0.2)]">
             <h2 className="text-2xl text-[#00ff41] mb-6 flex justify-between">
@@ -371,45 +346,33 @@ export default function AdminPage() {
                         <option value="career">04. CAREER GOALS (Text)</option>
                         <option value="skills">06. SKILLS (Text)</option>
                         <option value="experience">07. EXPERIENCE (Boxes)</option>
+                        {/* [CẬP NHẬT] Thêm Contact vào đây */}
+                        <option value="contact">11. CONTACT (Boxes)</option>
                     </select>
                 </div>
 
                 {isBoxSection ? (
-                    // GIAO DIỆN QUẢN LÝ BOX (CHO PROFILE & EXPERIENCE)
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <BoxEditor 
-                            lang="en" 
-                            data={boxesEn} 
-                            onAddBox={() => addBox('en')}
-                            onRemoveBox={(idx) => removeBox('en', idx)}
-                            onUpdateTitle={(idx, val) => updateBoxTitle('en', idx, val)}
-                            onAddItem={(idx) => addItem('en', idx)}
-                            onRemoveItem={(bIdx, iIdx) => removeItem('en', bIdx, iIdx)}
-                            onUpdateItem={(bIdx, iIdx, field, val) => updateItem('en', bIdx, iIdx, field, val)}
+                            lang="en" data={boxesEn} 
+                            onAddBox={() => addBox('en')} onRemoveBox={(idx) => removeBox('en', idx)}
+                            onUpdateTitle={(idx, val) => updateBoxTitle('en', idx, val)} onAddItem={(idx) => addItem('en', idx)}
+                            onRemoveItem={(bIdx, iIdx) => removeItem('en', bIdx, iIdx)} onUpdateItem={(bIdx, iIdx, field, val) => updateItem('en', bIdx, iIdx, field, val)}
                         />
                         <BoxEditor 
-                            lang="vi" 
-                            data={boxesVi} 
-                            onAddBox={() => addBox('vi')}
-                            onRemoveBox={(idx) => removeBox('vi', idx)}
-                            onUpdateTitle={(idx, val) => updateBoxTitle('vi', idx, val)}
-                            onAddItem={(idx) => addItem('vi', idx)}
-                            onRemoveItem={(bIdx, iIdx) => removeItem('vi', bIdx, iIdx)}
-                            onUpdateItem={(bIdx, iIdx, field, val) => updateItem('vi', bIdx, iIdx, field, val)}
+                            lang="vi" data={boxesVi} 
+                            onAddBox={() => addBox('vi')} onRemoveBox={(idx) => removeBox('vi', idx)}
+                            onUpdateTitle={(idx, val) => updateBoxTitle('vi', idx, val)} onAddItem={(idx) => addItem('vi', idx)}
+                            onRemoveItem={(bIdx, iIdx) => removeItem('vi', bIdx, iIdx)} onUpdateItem={(bIdx, iIdx, field, val) => updateItem('vi', bIdx, iIdx, field, val)}
                         />
                         <BoxEditor 
-                            lang="jp" 
-                            data={boxesJp} 
-                            onAddBox={() => addBox('jp')}
-                            onRemoveBox={(idx) => removeBox('jp', idx)}
-                            onUpdateTitle={(idx, val) => updateBoxTitle('jp', idx, val)}
-                            onAddItem={(idx) => addItem('jp', idx)}
-                            onRemoveItem={(bIdx, iIdx) => removeItem('jp', bIdx, iIdx)}
-                            onUpdateItem={(bIdx, iIdx, field, val) => updateItem('jp', bIdx, iIdx, field, val)}
+                            lang="jp" data={boxesJp} 
+                            onAddBox={() => addBox('jp')} onRemoveBox={(idx) => removeBox('jp', idx)}
+                            onUpdateTitle={(idx, val) => updateBoxTitle('jp', idx, val)} onAddItem={(idx) => addItem('jp', idx)}
+                            onRemoveItem={(bIdx, iIdx) => removeItem('jp', bIdx, iIdx)} onUpdateItem={(bIdx, iIdx, field, val) => updateItem('jp', bIdx, iIdx, field, val)}
                         />
                     </div>
                 ) : (
-                    // GIAO DIỆN TEXT THƯỜNG (CHO ABOUT, CAREER, SKILLS)
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div><label className="block text-gray-400 mb-1 text-sm">English</label><textarea name="contentEn" value={secEn} onChange={e => setSecEn(e.target.value)} className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" /></div>
                         <div><label className="block text-gray-400 mb-1 text-sm">Vietnamese</label><textarea name="contentVi" value={secVi} onChange={e => setSecVi(e.target.value)} className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" /></div>

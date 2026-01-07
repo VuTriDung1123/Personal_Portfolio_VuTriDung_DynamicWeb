@@ -29,7 +29,7 @@ type SectionData = {
   contentJp: string;
 };
 
-// Type cho cấu trúc Box (Profile/Experience)
+// Type cho cấu trúc Box (Profile/Experience/Contact)
 type BoxItem = { label: string; value: string; };
 type SectionBox = { id: string; title: string; items: BoxItem[]; };
 
@@ -64,20 +64,22 @@ export default function Home() {
         if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3) as unknown as Post[]);
     });
 
-    // 2. Fetch Dynamic Sections (Thêm profile và experience)
+    // 2. Fetch Dynamic Sections (Thêm contact)
     Promise.all([
         getSectionContent("about"),
         getSectionContent("career"),
         getSectionContent("skills"),
-        getSectionContent("profile"),    // New
-        getSectionContent("experience")  // New
-    ]).then(([about, career, skills, profile, experience]) => {
+        getSectionContent("profile"),
+        getSectionContent("experience"),
+        getSectionContent("contact") // New
+    ]).then(([about, career, skills, profile, experience, contact]) => {
         const sections: Record<string, SectionData> = {};
         if (about) sections.about = about as unknown as SectionData;
         if (career) sections.career = career as unknown as SectionData;
         if (skills) sections.skills = skills as unknown as SectionData;
         if (profile) sections.profile = profile as unknown as SectionData;
         if (experience) sections.experience = experience as unknown as SectionData;
+        if (contact) sections.contact = contact as unknown as SectionData;
         setDynamicSections(sections);
     });
   }, []);
@@ -151,7 +153,7 @@ export default function Home() {
     }
   };
 
-  // Dữ liệu fallback cho Profile nếu DB chưa có
+  // Fallbacks
   const renderFallbackProfile = () => (
     <>
         <div className="profile-box">
@@ -175,7 +177,6 @@ export default function Home() {
     </>
   );
 
-  // Dữ liệu fallback cho Experience nếu DB chưa có
   const renderFallbackExperience = () => (
     <div className="profile-container">
         <div className="profile-box">
@@ -199,8 +200,28 @@ export default function Home() {
     </div>
   );
 
+  const renderFallbackContact = () => (
+    <div className="profile-container">
+        <div className="profile-box">
+            <h3>{t.box_contact_direct}</h3>
+            <ul className="profile-list">
+                <li style={{ alignItems: 'flex-start' }}><span className="label">Email:</span><div className="value"><div>- dungvutri25@gmail.com (Main)</div><div>- dungvutri2k5@gmail.com</div></div></li>
+                <li style={{ alignItems: 'flex-start' }}><span className="label">Phone:</span><div className="value"><div>- (+84) 931 466 930 (Main)</div><div>- 0903 601 125</div></div></li>
+            </ul>
+        </div>
+        <div className="profile-box">
+            <h3>{t.box_social}</h3>
+            <ul className="profile-list">
+                <li><span className="label">LinkedIn:</span> <span className="value link-hover">/dungvutri23112005</span></li>
+                <li style={{ alignItems: 'flex-start' }}><span className="label">Github:</span><div className="value"><div>- /VuTriDung1123 (Main)</div><div>- /VuTriDung</div></div></li>
+            </ul>
+        </div>
+    </div>
+  );
+
   const profileBoxes = getSectionBoxes("profile");
   const experienceBoxes = getSectionBoxes("experience");
+  const contactBoxes = getSectionBoxes("contact");
 
   return (
     <main>
@@ -238,7 +259,6 @@ export default function Home() {
             <h2>{t.sec_profile}</h2>
             <div className="profile-container">
                 {profileBoxes && profileBoxes.length > 0 ? (
-                    // Nếu có DB -> Render từ DB
                     profileBoxes.map((box) => (
                         <div key={box.id} className="profile-box">
                             <h3>{box.title}</h3>
@@ -253,7 +273,6 @@ export default function Home() {
                         </div>
                     ))
                 ) : (
-                    // Nếu không có DB -> Render fallback
                     renderFallbackProfile()
                 )}
             </div>
@@ -344,7 +363,6 @@ export default function Home() {
                             <ul className="profile-list">
                                 {box.items.map((item, idx) => (
                                     <li key={idx}>
-                                        {/* CSS class này để nếu value dài quá nó sẽ xuống dòng đẹp hơn */}
                                         <span className="label">{item.label}</span>
                                         <span className="value">{item.value}</span>
                                     </li>
@@ -424,7 +442,7 @@ export default function Home() {
             </div>
         </section>
 
-        {/* 10. GALLERY */}
+        {/* 10. GALLERY (Đã sửa Hardcode thành 10. GALLERY để không đổi) */}
         <section id="gallery" className="content-section">
              <h2>10. GALLERY</h2> 
              <h3 className="carousel-title">{t.cat_it_event}</h3>
@@ -446,25 +464,28 @@ export default function Home() {
             </div>
         </section>
         
-        {/* 11. CONTACT */}
+        {/* 11. CONTACT (Dynamic Boxes) */}
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
-            <h2>{t.sec_contact}</h2>
-            <div className="profile-container">
-                <div className="profile-box">
-                    <h3>{t.box_contact_direct}</h3>
-                    <ul className="profile-list">
-                        <li style={{ alignItems: 'flex-start' }}><span className="label">Email:</span><div className="value"><div>- dungvutri25@gmail.com (Main)</div><div>- dungvutri2k5@gmail.com</div></div></li>
-                        <li style={{ alignItems: 'flex-start' }}><span className="label">Phone:</span><div className="value"><div>- (+84) 931 466 930 (Main)</div><div>- 0903 601 125</div></div></li>
-                    </ul>
+            <h2>11. CONTACT</h2>
+            {contactBoxes && contactBoxes.length > 0 ? (
+                <div className="profile-container">
+                    {contactBoxes.map((box) => (
+                        <div key={box.id} className="profile-box">
+                            <h3>{box.title}</h3>
+                            <ul className="profile-list">
+                                {box.items.map((item, idx) => (
+                                    <li key={idx}>
+                                        <span className="label">{item.label}</span>
+                                        <span className="value">{item.value}</span>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    ))}
                 </div>
-                <div className="profile-box">
-                    <h3>{t.box_social}</h3>
-                    <ul className="profile-list">
-                        <li><span className="label">LinkedIn:</span> <a href="https://linkedin.com/in/dungvutri23112005" target="_blank" className="value link-hover">/dungvutri23112005</a></li>
-                        <li style={{ alignItems: 'flex-start' }}><span className="label">Github:</span><div className="value"><div><a href="https://github.com/VuTriDung1123" target="_blank" className="link-hover">- /VuTriDung1123 (Main)</a></div><div><a href="https://github.com/VuTriDung" target="_blank" className="link-hover">- /VuTriDung</a></div></div></li>
-                    </ul>
-                </div>
-            </div>
+            ) : (
+                renderFallbackContact()
+            )}
         </section>
     </main>
   );
