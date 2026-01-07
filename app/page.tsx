@@ -36,6 +36,8 @@ export default function Home() {
   const [dbTechCerts, setDbTechCerts] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [latestPosts, setLatestPosts] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dbAchievements, setDbAchievements] = useState<any[]>([]);
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -47,6 +49,7 @@ export default function Home() {
     getPostsByTag("it_events").then(setDbItEvents);
     getPostsByTag("lang_certs").then(setDbLangCerts);
     getPostsByTag("tech_certs").then(setDbTechCerts);
+    getPostsByTag("achievements").then(setDbAchievements);
     getAllPosts().then((posts) => {
         if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3));
     });
@@ -164,6 +167,14 @@ export default function Home() {
                         <li><span className="label">{t.lbl_status}</span> <span className="value highlight">{t.val_status}</span></li>
                     </ul>
                 </div>
+                {/* [MỚI] Box 3: Other Info */}
+                <div className="profile-box">
+                    <h3>{t.box_other}</h3>
+                    <ul className="profile-list">
+                        <li><span className="label">{t.lbl_other_1}</span> <span className="value">{t.val_other_1}</span></li>
+                        <li><span className="label">{t.lbl_other_2}</span> <span className="value">{t.val_other_2}</span></li>
+                    </ul>
+                </div>
             </div>
         </section>
 
@@ -194,7 +205,33 @@ export default function Home() {
         </section>
 
         <section id="career" className="content-section"><h2>{t.sec_career}</h2><p>{t.career_desc}</p></section>
-        <section id="hobby" className="content-section"><h2>{t.sec_hobby}</h2><p>{t.hobby_desc}</p></section>
+        {/* [MỚI] SECTION 05: ACHIEVEMENTS (Thay thế Hobbies cũ) */}
+        <section id="achievements" className="content-section">
+            <h2>{t.sec_achievements}</h2>
+            <p style={{marginBottom: '20px', color: '#bbb'}}>{t.achievements_desc}</p>
+            
+            <div className="carousel-wrapper">
+                <button className="nav-btn prev-btn" onClick={() => scrollCarousel('achievements-list', -1)}>&#10094;</button>
+                <div className="carousel-container" id="achievements-list">
+                    {dbAchievements.length > 0 ? (
+                        dbAchievements.map((post: Post) => (
+                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                <img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} />
+                                <div className="card-info">
+                                    <h4>{post.title}</h4>
+                                    <p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ACHIEVEMENT</p>
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{color: '#888', fontStyle: 'italic', padding: '20px', border: '1px dashed #333', width: '100%', textAlign: 'center'}}>
+                            {`// SYSTEM MESSAGE: CHƯA CÓ THÀNH TỰU NÀO ĐƯỢC GHI NHẬN`}
+                        </div>
+                    )}
+                </div>
+                <button className="nav-btn next-btn" onClick={() => scrollCarousel('achievements-list', 1)}>&#10095;</button>
+            </div>
+        </section>
         <section id="skills" className="content-section"><h2>{t.sec_skills}</h2><p>HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker, Next.js, PostgreSQL.</p></section>
 
         <section id="experience" className="content-section">

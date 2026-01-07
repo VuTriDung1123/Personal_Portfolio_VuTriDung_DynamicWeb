@@ -9,7 +9,7 @@ export const translations = {
     nav_profile: "Profile",
     nav_cert: "Certificates",
     nav_career: "Career",
-    nav_hobby: "Hobby",
+    nav_achievements: "Achievements",
     nav_skills: "Skills",
     nav_exp: "Experience",
     nav_proj: "Projects",
@@ -47,6 +47,13 @@ export const translations = {
     val_lang: "Vietnamese, English, Japanese",
     lbl_status: "Status:",
     val_status: "Available for work",
+
+    // 2. Thêm box Other cho Profile
+    box_other: "Other Info",
+    lbl_other_1: "Interests:",
+    val_other_1: "Research, Travel",
+    lbl_other_2: "Soft Skills:",
+    val_other_2: "Leadership, Teamwork",
     
     sec_cert: "03. CERTIFICATES",
     cat_lang: "Language Certificates",
@@ -56,8 +63,8 @@ export const translations = {
     sec_career: "04. CAREER GOALS",
     career_desc: "To become a Full-stack Developer and a Cyber Security Expert in the next 5 years.",
     
-    sec_hobby: "05. HOBBIES",
-    hobby_desc: "Coding, Gaming (Gacha), Reading Tech Blogs, Listening to Music.",
+    sec_achievements: "05. ACHIEVEMENTS", // Thay cho sec_hobby
+    achievements_desc: "Competitions and academic events I have participated in.",
     
     sec_skills: "06. SKILLS",
     
@@ -96,7 +103,7 @@ export const translations = {
     nav_profile: "Hồ Sơ",
     nav_cert: "Chứng Chỉ",
     nav_career: "Sự Nghiệp",
-    nav_hobby: "Sở Thích",
+    nav_achievements: "Thành Tựu",
     nav_skills: "Kỹ Năng",
     nav_exp: "Kinh Nghiệm",
     nav_proj: "Dự Án",
@@ -134,6 +141,12 @@ export const translations = {
     val_lang: "Tiếng Việt, Anh, Nhật",
     lbl_status: "Trạng Thái:",
     val_status: "Đang tìm việc",
+
+    box_other: "Thông Tin Khác",
+    lbl_other_1: "Sở thích:",
+    val_other_1: "Nghiên cứu, Du lịch",
+    lbl_other_2: "Kỹ năng mềm:",
+    val_other_2: "Lãnh đạo, Làm việc nhóm",
     
     sec_cert: "03. CHỨNG CHỈ",
     cat_lang: "Chứng Chỉ Ngoại Ngữ",
@@ -143,8 +156,8 @@ export const translations = {
     sec_career: "04. MỤC TIÊU NGHỀ NGHIỆP",
     career_desc: "Trở thành Full-stack Developer và Chuyên gia An ninh mạng trong 5 năm tới.",
     
-    sec_hobby: "05. SỞ THÍCH",
-    hobby_desc: "Lập trình, Chơi game (Gacha), Đọc Blog công nghệ, Nghe nhạc.",
+    sec_achievements: "05. THÀNH TỰU",
+    achievements_desc: "Các cuộc thi và sự kiện học thuật tôi đã tham gia (Không quan trọng giải thưởng).",
     
     sec_skills: "06. KỸ NĂNG",
     
@@ -183,7 +196,7 @@ export const translations = {
     nav_profile: "プロフィール",
     nav_cert: "証明書",
     nav_career: "キャリア",
-    nav_hobby: "趣味",
+    nav_achievements: "実績",
     nav_skills: "スキル",
     nav_exp: "経験",
     nav_proj: "プロジェクト",
@@ -221,6 +234,12 @@ export const translations = {
     val_lang: "ベトナム語, 英語, 日本語",
     lbl_status: "ステータス:",
     val_status: "仕事募集中",
+
+    box_other: "その他",
+    lbl_other_1: "興味:",
+    val_other_1: "研究, 旅行",
+    lbl_other_2: "ソフトスキル:",
+    val_other_2: "リーダーシップ, チームワーク",
     
     sec_cert: "03. 証明書",
     cat_lang: "語学証明書",
@@ -230,8 +249,8 @@ export const translations = {
     sec_career: "04. キャリア目標",
     career_desc: "今後5年でフルスタック開発者およびサイバーセキュリティの専門家になること。",
     
-    sec_hobby: "05. 趣味",
-    hobby_desc: "プログラミング, ゲーム(ガチャ), 技術ブログを読む, 音楽鑑賞。",
+    sec_achievements: "05. 実績",
+    achievements_desc: "私が参加したコンテストや学術イベント。",
     
     sec_skills: "06. スキル",
     

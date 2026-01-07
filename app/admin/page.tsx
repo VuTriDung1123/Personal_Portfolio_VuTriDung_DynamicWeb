@@ -130,6 +130,7 @@ export default function AdminPage() {
                                     <option value="my_confessions">My Confessions</option>
                                     <option value="uni_projects">University Projects</option>
                                     <option value="personal_projects">Personal Projects</option>
+                                    <option value="achievements">Achievements</option>
                                     <option value="it_events">IT Events</option>
                                     <option value="lang_certs">Language Certificates</option>
                                     <option value="tech_certs">Technical Certificates</option>
