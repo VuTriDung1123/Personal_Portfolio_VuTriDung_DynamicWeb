@@ -1,10 +1,9 @@
 "use client";
 
-
 import { useState, useEffect } from "react";
 import { checkAdmin, createPost, deletePost, getAllPosts, updatePost, getSectionContent, saveSectionContent } from "@/lib/actions";
 
-// 1. Định nghĩa kiểu dữ liệu để tránh lỗi "Unexpected any"
+// Định nghĩa kiểu dữ liệu để tránh lỗi Typescript
 interface Post {
   id: string;
   title: string;
@@ -38,11 +37,11 @@ export default function AdminPage() {
   const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    // Load Blog
+    // Load danh sách bài viết
     getAllPosts().then((data) => setPosts(data as unknown as Post[]));
   }, []);
 
-  // 2. Sửa lỗi "setState synchronously within an effect"
+  // Xử lý load dữ liệu Section khi chuyển Tab hoặc đổi Key
   useEffect(() => {
     if (activeTab === 'content') {
         const fetchSection = async () => {
@@ -50,33 +49,32 @@ export default function AdminPage() {
             try {
                 const data = await getSectionContent(sectionKey);
                 if (data) {
-                    // Ép kiểu dữ liệu trả về
                     const typedData = data as unknown as SectionData;
                     setSecEn(typedData.contentEn || "");
                     setSecVi(typedData.contentVi || "");
                     setSecJp(typedData.contentJp || "");
-                    setMsg("Loaded data from DB.");
+                    setMsg("Loaded from DB.");
                 } else {
                     setSecEn(""); setSecVi(""); setSecJp("");
-                    setMsg("No data in DB yet (Will create new).");
+                    setMsg("No data yet (Will create new).");
                 }
             } catch (error) {
-                console.error(error); // 3. Sửa lỗi 'error' defined but never used
-                setMsg("Error loading data.");
+                console.error(error);
+                setMsg("Error loading.");
             }
         };
         fetchSection();
     }
   }, [sectionKey, activeTab]);
 
-  // --- LOGIC AUTH ---
+  // --- AUTH ---
   async function handleLogin(formData: FormData) {
     const res = await checkAdmin(formData);
     if (res.success) setIsAuth(true);
-    else alert("Sai mật khẩu!");
+    else alert("Wrong Password!");
   }
 
-  // --- LOGIC BLOG ---
+  // --- BLOG LOGIC ---
   const addLinkField = () => setImages([...images, ""]);
   const removeLinkField = (index: number) => { const newImg = [...images]; newImg.splice(index, 1); setImages(newImg); };
   const updateLinkField = (index: number, val: string) => { const newImg = [...images]; newImg[index] = val; setImages(newImg); };
@@ -87,12 +85,11 @@ export default function AdminPage() {
 
     if (editingPost) {
         await updatePost(formData);
-        alert("Cập nhật bài viết thành công!");
-
+        alert("Updated Post!");
         setEditingPost(null);
     } else {
         await createPost(formData);
-        alert("POST CREATED!");
+        alert("Created Post!");
     }
     setImages([]);
     const updated = await getAllPosts();
@@ -107,13 +104,13 @@ export default function AdminPage() {
   }
 
   async function handleDelete(id: string) {
-    if(!confirm("Xóa thật hả?")) return;
+    if(!confirm("Delete this post?")) return;
     await deletePost(id);
     const updated = await getAllPosts();
     setPosts(updated as unknown as Post[]);
   }
 
-  // --- LOGIC SECTION CONTENT ---
+  // --- SECTION LOGIC ---
   async function handleSectionSubmit(formData: FormData) {
     setMsg("Saving...");
     const res = await saveSectionContent(formData);
@@ -154,25 +151,23 @@ export default function AdminPage() {
         </div>
       </div>
 
-      {/* --- TAB 1: BLOG MANAGER --- */}
+      {/* --- TAB 1: BLOG --- */}
       {activeTab === 'blog' && (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
-            {/* FORM */}
-            <div className={`p-5 border-2 ${editingPost ? 'border-yellow-400 shadow-[0_0_15px_yellow]' : 'border-[#00ff41] shadow-[0_0_10px_#00ff41]'} bg-black/50 h-fit sticky top-10`}>
+            {/* Form */}
+            <div className={`p-5 border-2 ${editingPost ? 'border-yellow-400' : 'border-[#00ff41]'} bg-black/50 h-fit sticky top-10`}>
                 <h2 className={`text-2xl mb-5 border-b pb-2 ${editingPost ? 'text-yellow-400' : 'text-[#00ff41]'}`}>
-                    {editingPost ? `>> EDITING MODE: [${editingPost.id.substring(0,5)}...]` : ">> NEW ENTRY"}
+                    {editingPost ? ">> EDIT MODE" : ">> NEW ENTRY"}
                 </h2>
-                
                 <form action={handleBlogSubmit} className="flex flex-col gap-4">
                     {editingPost && <input type="hidden" name="id" value={editingPost.id} />}
-                    
-                    <input name="title" placeholder="Title..." defaultValue={editingPost?.title} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]" />
+                    <input name="title" placeholder="Title" defaultValue={editingPost?.title} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]" />
                     
                     <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]">
                         <option value="my_confessions">My Confessions</option>
                         <option value="uni_projects">University Projects</option>
                         <option value="personal_projects">Personal Projects</option>
-                        <option value="achievements">Achievements (Thành tựu)</option>
+                        <option value="achievements">Achievements</option>
                         <option value="it_events">IT Events</option>
                         <option value="lang_certs">Language Certificates</option>
                         <option value="tech_certs">Technical Certificates</option>
@@ -184,19 +179,13 @@ export default function AdminPage() {
                         <option value="jp">Japanese</option>
                     </select>
 
-                    <textarea name="content" placeholder="Content (Markdown supported)..." defaultValue={editingPost?.content} rows={10} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41] font-mono text-sm" />
+                    <textarea name="content" placeholder="Content (Markdown)" defaultValue={editingPost?.content} rows={10} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41] font-mono text-sm" />
 
-                    {/* Image Links Manager */}
                     <div className="border border-[#333] p-3">
-                        <label className="text-sm text-[#00ff41] block mb-2">IMAGE LINKS (Direct URL)</label>
+                        <label className="text-sm text-[#00ff41] block mb-2">IMAGE LINKS</label>
                         {images.map((link, idx) => (
                             <div key={idx} className="flex gap-2 mb-2">
-                                <input 
-                                    value={link} 
-                                    onChange={(e) => updateLinkField(idx, e.target.value)}
-                                    placeholder="https://example.com/image.jpg"
-                                    className="flex-1 bg-[#111] border border-[#333] p-1 text-xs text-white"
-                                />
+                                <input value={link} onChange={(e) => updateLinkField(idx, e.target.value)} className="flex-1 bg-[#111] border border-[#333] p-1 text-xs text-white" />
                                 <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 font-bold px-2">X</button>
                             </div>
                         ))}
@@ -204,35 +193,25 @@ export default function AdminPage() {
                     </div>
 
                     <div className="flex gap-2 mt-2">
-                        <button type="submit" className={`flex-1 font-bold py-2 ${editingPost ? 'bg-yellow-600 text-white' : 'bg-[#00ff41] text-black'} hover:opacity-90`}>
-                            {editingPost ? "UPDATE DATA" : "UPLOAD TO SERVER"}
-                        </button>
-                        {editingPost && (
-                            <button type="button" onClick={() => {setEditingPost(null); setImages([]); setTag("my_confessions");}} className="bg-gray-700 text-white px-4 py-2">
-                                CANCEL
-                            </button>
-                        )}
+                        <button type="submit" className="flex-1 bg-[#00ff41] text-black font-bold py-2 hover:opacity-90">SUBMIT</button>
+                        {editingPost && <button type="button" onClick={() => {setEditingPost(null); setImages([]);}} className="bg-gray-700 text-white px-4">CANCEL</button>}
                     </div>
                 </form>
             </div>
 
-            {/* LIST */}
+            {/* List */}
             <div className="flex flex-col gap-4">
-                <h2 className="text-2xl text-[#00ff41] border-b border-[#00ff41] pb-2">DATABASE LOGS</h2>
+                <h2 className="text-2xl text-[#00ff41] border-b border-[#00ff41] pb-2">LOGS</h2>
                 {posts.map(post => (
                     <div key={post.id} className="bg-[#0a0a0a] border border-[#333] p-4 hover:border-[#00ff41] transition group">
-                        <div className="flex justify-between items-start">
+                        <div className="flex justify-between">
                             <div>
                                 <h3 className="font-bold text-lg text-white group-hover:text-[#00ff41]">{post.title}</h3>
-                                <div className="text-xs text-gray-500 mt-1">
-                                    Tag: <span className="text-[#008f11]">{post.tag}</span> | 
-                                    Lang: {post.language} | 
-                                    ID: {post.id.substring(0, 8)}...
-                                </div>
+                                <p className="text-xs text-gray-500">{post.tag} | {post.language}</p>
                             </div>
                             <div className="flex gap-2">
-                                <button onClick={() => startEdit(post)} className="text-yellow-500 hover:underline text-sm">[EDIT]</button>
-                                <button onClick={() => handleDelete(post.id)} className="text-red-500 hover:underline text-sm">[DEL]</button>
+                                <button onClick={() => startEdit(post)} className="text-yellow-500 text-sm">[EDIT]</button>
+                                <button onClick={() => handleDelete(post.id)} className="text-red-500 text-sm">[DEL]</button>
                             </div>
                         </div>
                     </div>
@@ -241,25 +220,18 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* --- TAB 2: SECTION EDIT MANAGER --- */}
+      {/* --- TAB 2: SECTIONS --- */}
       {activeTab === 'content' && (
         <div className="max-w-4xl mx-auto border border-[#00ff41] p-6 bg-black/80 shadow-[0_0_20px_rgba(0,255,65,0.2)]">
             <h2 className="text-2xl text-[#00ff41] mb-6 flex justify-between">
-                <span>EDIT STATIC SECTIONS</span>
+                <span>EDIT SECTIONS</span>
                 <span className="text-sm text-gray-400 normal-case">{msg}</span>
             </h2>
 
             <form action={handleSectionSubmit} className="flex flex-col gap-6">
-                
-                {/* 1. Chọn Section muốn sửa */}
                 <div>
-                    <label className="block text-[#00ff41] mb-2 font-bold">SELECT SECTION TO EDIT:</label>
-                    <select 
-                        name="sectionKey" 
-                        value={sectionKey} 
-                        onChange={(e) => setSectionKey(e.target.value)}
-                        className="w-full bg-[#111] border border-[#00ff41] p-3 text-xl text-white outline-none"
-                    >
+                    <label className="block text-[#00ff41] mb-2 font-bold">SELECT SECTION:</label>
+                    <select name="sectionKey" value={sectionKey} onChange={(e) => setSectionKey(e.target.value)} className="w-full bg-[#111] border border-[#00ff41] p-3 text-xl text-white outline-none">
                         <option value="about">01. ABOUT ME</option>
                         <option value="career">04. CAREER GOALS</option>
                         <option value="skills">06. SKILLS</option>
@@ -267,48 +239,15 @@ export default function AdminPage() {
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {/* ENGLISH */}
-                    <div>
-                        <label className="block text-gray-400 mb-1 text-sm">Content (English)</label>
-                        <textarea 
-                            name="contentEn" 
-                            value={secEn}
-                            onChange={e => setSecEn(e.target.value)}
-                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
-                            placeholder="Write in English..."
-                        />
-                    </div>
-                    {/* VIETNAMESE */}
-                    <div>
-                        <label className="block text-gray-400 mb-1 text-sm">Content (Vietnamese)</label>
-                        <textarea 
-                            name="contentVi" 
-                            value={secVi}
-                            onChange={e => setSecVi(e.target.value)}
-                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
-                            placeholder="Viết tiếng Việt..."
-                        />
-                    </div>
-                    {/* JAPANESE */}
-                    <div>
-                        <label className="block text-gray-400 mb-1 text-sm">Content (Japanese)</label>
-                        <textarea 
-                            name="contentJp" 
-                            value={secJp}
-                            onChange={e => setSecJp(e.target.value)}
-                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
-                            placeholder="日本語..."
-                        />
-                    </div>
+                    <div><label className="block text-gray-400 mb-1 text-sm">English</label><textarea name="contentEn" value={secEn} onChange={e => setSecEn(e.target.value)} className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" /></div>
+                    <div><label className="block text-gray-400 mb-1 text-sm">Vietnamese</label><textarea name="contentVi" value={secVi} onChange={e => setSecVi(e.target.value)} className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" /></div>
+                    <div><label className="block text-gray-400 mb-1 text-sm">Japanese</label><textarea name="contentJp" value={secJp} onChange={e => setSecJp(e.target.value)} className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" /></div>
                 </div>
 
-                <button type="submit" className="w-full bg-[#00ff41] text-black font-bold py-3 text-xl hover:opacity-90 shadow-[4px_4px_0_#008f11] active:translate-y-1 active:shadow-none transition">
-                    SAVE CHANGES TO DATABASE
-                </button>
+                <button type="submit" className="w-full bg-[#00ff41] text-black font-bold py-3 text-xl hover:opacity-90">SAVE CHANGES</button>
             </form>
         </div>
       )}
-
     </div>
   );
 }

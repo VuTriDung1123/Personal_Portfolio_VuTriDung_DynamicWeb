@@ -1,13 +1,14 @@
 "use server";
 
-import prisma from "./prisma"; // Đảm bảo bạn đã có file lib/prisma.ts, nếu chưa thì báo tôi
+import prisma from "./prisma"; 
 import { revalidatePath } from "next/cache";
 
-// 1. Kiểm tra Admin (Giữ nguyên)
+// --- 1. ADMIN AUTH ---
 export async function checkAdmin(formData: FormData) {
   const username = formData.get("username") as string;
   const password = formData.get("password") as string;
   
+  // Hardcode tạm thời (bạn có thể đổi sau)
   const VALID_USER = "admin"; 
   const VALID_PASS = "Dung2005";
   
@@ -17,119 +18,88 @@ export async function checkAdmin(formData: FormData) {
   return { success: false };
 }
 
-// 2. Tạo bài viết (SỬA LẠI: Dùng Link ảnh thay vì Upload file)
+// --- 2. BLOG MANAGER ---
+
 export async function createPost(formData: FormData) {
-  // Lấy dữ liệu từ form
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const tag = formData.get("tag") as string;
   const language = formData.get("language") as string;
-  
-  // SỬA QUAN TRỌNG: Lấy chuỗi JSON các link ảnh từ form
-  // Nếu không có ảnh thì mặc định là mảng rỗng "[]"
   const images = (formData.get("images") as string) || "[]";
 
   try {
-    // Lưu vào Database
     await prisma.post.create({
       data: {
-        title,
-        content,
-        tag: tag || "my_confessions",
-        language: language || "vi",
-        images, // Lưu thẳng chuỗi JSON link ảnh vào đây
+        title, content, tag, language, images,
       },
     });
-
-    // Làm mới lại các trang
     revalidatePath("/");
     revalidatePath("/blog");
     revalidatePath("/admin");
   } catch (error) {
-    console.error("Lỗi khi tạo bài viết:", error);
+    console.error("Create error:", error);
   }
 }
 
-
-// --- HÀM MỚI: CẬP NHẬT BÀI VIẾT ---
 export async function updatePost(formData: FormData) {
-  const id = formData.get("id") as string; // Lấy ID bài cần sửa
+  const id = formData.get("id") as string;
   const title = formData.get("title") as string;
   const content = formData.get("content") as string;
   const tag = formData.get("tag") as string;
   const language = formData.get("language") as string;
-  
-  // Lấy chuỗi JSON link ảnh
   const images = (formData.get("images") as string) || "[]";
 
   try {
-    // Lệnh Update của Prisma
     await prisma.post.update({
-      where: { id: id }, // Tìm bài theo ID
-      data: {
-        title,
-        content,
-        tag,
-        language,
-        images,
-        // Không cập nhật createdAt
-      },
+      where: { id },
+      data: { title, content, tag, language, images },
     });
-
     revalidatePath("/");
     revalidatePath("/blog");
     revalidatePath("/admin");
     return { success: true };
   } catch (error) {
-    console.error("Lỗi khi sửa bài viết:", error);
+    console.error("Update error:", error);
     return { success: false, error };
   }
 }
 
-
-// 3. Xóa bài viết (Giữ nguyên)
 export async function deletePost(id: string) {
     try {
         await prisma.post.delete({ where: { id } });
-        revalidatePath("/admin");
-        revalidatePath("/blog");
         revalidatePath("/");
+        revalidatePath("/blog");
+        revalidatePath("/admin");
     } catch (error) {
-        console.error("Failed to delete post:", error);
+        console.error("Delete error:", error);
     }
 }
 
-// 4. Các hàm lấy dữ liệu Blog (Giữ nguyên)
 export async function getAllPosts() {
-  try { 
-      return await prisma.post.findMany({ orderBy: { createdAt: "desc" } }); 
-  } catch { return []; }
+  try { return await prisma.post.findMany({ orderBy: { createdAt: "desc" } }); } catch { return []; }
 }
 
 export async function getPostsByTag(tag: string) {
-  try { 
-      return await prisma.post.findMany({ where: { tag }, orderBy: { createdAt: "desc" } }); 
-  } catch { return []; }
+  try { return await prisma.post.findMany({ where: { tag }, orderBy: { createdAt: "desc" } }); } catch { return []; }
 }
 
 export async function getPostById(id: string) {
-  try { 
-      return await prisma.post.findUnique({ where: { id } }); 
-  } catch { return null; }
+  try { return await prisma.post.findUnique({ where: { id } }); } catch { return null; }
 }
 
-// 1. Lấy nội dung của 1 section theo key
+// --- 3. SECTION CONTENT MANAGER (NEW) ---
+
 export async function getSectionContent(key: string) {
   try {
     return await prisma.sectionContent.findUnique({
       where: { sectionKey: key },
     });
   } catch (error) {
+    console.error("Get section error:", error);
     return null;
   }
 }
 
-// 2. Lưu hoặc Cập nhật nội dung (Upsert)
 export async function saveSectionContent(formData: FormData) {
   const sectionKey = formData.get("sectionKey") as string;
   const contentEn = formData.get("contentEn") as string;
@@ -139,23 +109,14 @@ export async function saveSectionContent(formData: FormData) {
   try {
     await prisma.sectionContent.upsert({
       where: { sectionKey: sectionKey },
-      update: { // Nếu đã có -> Update
-        contentEn,
-        contentVi,
-        contentJp,
-      },
-      create: { // Nếu chưa có -> Create mới
-        sectionKey,
-        contentEn,
-        contentVi,
-        contentJp,
-      },
+      update: { contentEn, contentVi, contentJp },
+      create: { sectionKey, contentEn, contentVi, contentJp },
     });
 
-    revalidatePath("/"); // Làm mới trang chủ ngay lập tức
+    revalidatePath("/");
     return { success: true };
   } catch (error) {
-    console.error("Lỗi save section:", error);
+    console.error("Save section error:", error);
     return { success: false };
   }
 }
