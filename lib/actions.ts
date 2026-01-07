@@ -117,3 +117,45 @@ export async function getPostById(id: string) {
       return await prisma.post.findUnique({ where: { id } }); 
   } catch { return null; }
 }
+
+// 1. Lấy nội dung của 1 section theo key
+export async function getSectionContent(key: string) {
+  try {
+    return await prisma.sectionContent.findUnique({
+      where: { sectionKey: key },
+    });
+  } catch (error) {
+    return null;
+  }
+}
+
+// 2. Lưu hoặc Cập nhật nội dung (Upsert)
+export async function saveSectionContent(formData: FormData) {
+  const sectionKey = formData.get("sectionKey") as string;
+  const contentEn = formData.get("contentEn") as string;
+  const contentVi = formData.get("contentVi") as string;
+  const contentJp = formData.get("contentJp") as string;
+
+  try {
+    await prisma.sectionContent.upsert({
+      where: { sectionKey: sectionKey },
+      update: { // Nếu đã có -> Update
+        contentEn,
+        contentVi,
+        contentJp,
+      },
+      create: { // Nếu chưa có -> Create mới
+        sectionKey,
+        contentEn,
+        contentVi,
+        contentJp,
+      },
+    });
+
+    revalidatePath("/"); // Làm mới trang chủ ngay lập tức
+    return { success: true };
+  } catch (error) {
+    console.error("Lỗi save section:", error);
+    return { success: false };
+  }
+}

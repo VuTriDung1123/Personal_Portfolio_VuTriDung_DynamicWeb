@@ -1,281 +1,312 @@
 "use client";
 
-import { createPost, updatePost, checkAdmin, getAllPosts, deletePost } from "@/lib/actions";
-import { useState, useEffect, useRef } from "react";
-import MatrixRain from "@/components/MatrixRain";
+import { useState, useEffect } from "react";
+import { checkAdmin, createPost, deletePost, getAllPosts, updatePost, getSectionContent, saveSectionContent } from "@/lib/actions";
 
-// Định nghĩa kiểu dữ liệu cho bài viết
-type Post = {
-    id: string;
-    title: string;
-    images: string; // Chuỗi JSON chứa danh sách link
-    createdAt: Date;
-    tag?: string;
-    language?: string;
-    content?: string;
-};
+// 1. Định nghĩa kiểu dữ liệu để tránh lỗi "Unexpected any"
+interface Post {
+  id: string;
+  title: string;
+  tag: string;
+  language: string;
+  content: string;
+  images: string;
+}
+
+interface SectionData {
+  contentEn: string;
+  contentVi: string;
+  contentJp: string;
+}
 
 export default function AdminPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
+  const [activeTab, setActiveTab] = useState<'blog' | 'content'>('blog');
+
+  // --- STATES CHO BLOG ---
   const [posts, setPosts] = useState<Post[]>([]);
-  
-  // --- STATE ---
-  const [editingPost, setEditingPost] = useState<Post | null>(null); // Bài đang sửa
-  const formRef = useRef<HTMLFormElement>(null); // Để reset form
-
-  // Form inputs
-  const [imageLinks, setImageLinks] = useState<string[]>([""]);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [tag, setTag] = useState("my_confessions");
-  const [language, setLanguage] = useState("vi");
+  const [images, setImages] = useState<string[]>([]);
 
-  const refreshData = async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      getAllPosts().then((data: any) => setPosts(data));
-  }
+  // --- STATES CHO SECTION CONTENT ---
+  const [sectionKey, setSectionKey] = useState("about");
+  const [secEn, setSecEn] = useState("");
+  const [secVi, setSecVi] = useState("");
+  const [secJp, setSecJp] = useState("");
+  const [msg, setMsg] = useState("");
 
   useEffect(() => {
-    if (isLoggedIn) refreshData();
-  }, [isLoggedIn]);
+    // Load Blog
+    getAllPosts().then((data) => setPosts(data as unknown as Post[]));
+  }, []);
 
-  // --- HÀM RESET FORM ---
-  const resetForm = () => {
-    setTitle("");
-    setContent("");
-    setTag("my_confessions");
-    setLanguage("vi");
-    setImageLinks([""]);
-    setEditingPost(null); // Thoát chế độ sửa
-    if(formRef.current) formRef.current.reset();
+  // 2. Sửa lỗi "setState synchronously within an effect"
+  useEffect(() => {
+    if (activeTab === 'content') {
+        const fetchSection = async () => {
+            setMsg("Loading...");
+            try {
+                const data = await getSectionContent(sectionKey);
+                if (data) {
+                    // Ép kiểu dữ liệu trả về
+                    const typedData = data as unknown as SectionData;
+                    setSecEn(typedData.contentEn || "");
+                    setSecVi(typedData.contentVi || "");
+                    setSecJp(typedData.contentJp || "");
+                    setMsg("Loaded data from DB.");
+                } else {
+                    setSecEn(""); setSecVi(""); setSecJp("");
+                    setMsg("No data in DB yet (Will create new).");
+                }
+            } catch (error) {
+                console.error(error); // 3. Sửa lỗi 'error' defined but never used
+                setMsg("Error loading data.");
+            }
+        };
+        fetchSection();
+    }
+  }, [sectionKey, activeTab]);
+
+  // --- LOGIC AUTH ---
+  async function handleLogin(formData: FormData) {
+    const res = await checkAdmin(formData);
+    if (res.success) setIsAuth(true);
+    else alert("Sai mật khẩu!");
   }
 
-  // --- HÀM BẮT ĐẦU SỬA ---
-  const handleStartEdit = (post: Post) => {
-    setEditingPost(post);
-    setTitle(post.title);
-    setContent(post.content || "");
-    setTag(post.tag || "my_confessions");
-    setLanguage(post.language || "vi");
-    try {
-      const links = JSON.parse(post.images || "[]");
-      setImageLinks(links.length > 0 ? links : [""]);
-    } catch { setImageLinks([""]); }
-  };
+  // --- LOGIC BLOG ---
+  const addLinkField = () => setImages([...images, ""]);
+  const removeLinkField = (index: number) => { const newImg = [...images]; newImg.splice(index, 1); setImages(newImg); };
+  const updateLinkField = (index: number, val: string) => { const newImg = [...images]; newImg[index] = val; setImages(newImg); };
 
-  const handleCancelEdit = () => {
-    resetForm();
-  };
-
-  const handleLogin = async (formData: FormData) => {
-    const res = await checkAdmin(formData);
-    if (res.success) setIsLoggedIn(true);
-    else alert("ACCESS DENIED / SAI MẬT KHẨU");
-  };
-
-  // --- XỬ LÝ LINK ẢNH ---
-  const handleLinkChange = (index: number, value: string) => {
-    const newLinks = [...imageLinks];
-    newLinks[index] = value;
-    setImageLinks(newLinks);
-  };
-
-  const addLinkField = () => { setImageLinks([...imageLinks, ""]); };
-  const removeLinkField = (index: number) => {
-    const newLinks = imageLinks.filter((_, i) => i !== index);
-    setImageLinks(newLinks.length > 0 ? newLinks : [""]);
-  };
-  
-  // --- XỬ LÝ SUBMIT FORM ---
-  const handleSubmit = async (formData: FormData) => {
-    setLoading(true);
-    
-    // Chuẩn bị dữ liệu
-    const validLinks = imageLinks.filter(link => link.trim() !== "");
-    formData.set("images", JSON.stringify(validLinks));
-    formData.set("tag", tag);
-    formData.set("language", language);
+  async function handleBlogSubmit(formData: FormData) {
+    const jsonImages = JSON.stringify(images.filter(img => img.trim() !== ""));
+    formData.set("images", jsonImages);
 
     if (editingPost) {
-        // --- LOGIC CẬP NHẬT ---
-        formData.set("id", editingPost.id);
         await updatePost(formData);
         alert("Cập nhật bài viết thành công!");
+        setEditingPost(null);
     } else {
-        // --- LOGIC TẠO MỚI ---
         await createPost(formData);
         alert("Đăng bài thành công!");
     }
-
-    resetForm(); // Reset form sau khi xong
-    setLoading(false);
-    refreshData();
-  };
-
-  const handleDelete = async (id: string) => {
-    if(confirm("Bạn chắc chắn muốn xóa bài này?")) {
-        setLoading(true);
-        await deletePost(id);
-        refreshData();
-        setLoading(false);
-        if(editingPost?.id === id) resetForm();
-    }
+    setImages([]);
+    const updated = await getAllPosts();
+    setPosts(updated as unknown as Post[]);
   }
 
-  // --- MÀN HÌNH ĐĂNG NHẬP ---
-  if (!isLoggedIn) {
+  function startEdit(post: Post) {
+    setEditingPost(post);
+    setTag(post.tag);
+    try { setImages(JSON.parse(post.images)); } catch { setImages([]); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  async function handleDelete(id: string) {
+    if(!confirm("Xóa thật hả?")) return;
+    await deletePost(id);
+    const updated = await getAllPosts();
+    setPosts(updated as unknown as Post[]);
+  }
+
+  // --- LOGIC SECTION CONTENT ---
+  async function handleSectionSubmit(formData: FormData) {
+    setMsg("Saving...");
+    const res = await saveSectionContent(formData);
+    if (res.success) setMsg("Saved successfully!");
+    else setMsg("Error saving!");
+  }
+
+  if (!isAuth) {
     return (
-      <main className="h-screen flex items-center justify-center relative overflow-hidden bg-black font-mono">
-        <MatrixRain />
-        <form action={handleLogin} className="z-10 bg-[rgba(5,5,5,0.95)] border border-[#00ff41] p-10 flex flex-col gap-6 w-96 shadow-[0_0_30px_#00ff41]">
-            <h1 className="text-[#00ff41] text-3xl text-center font-bold tracking-widest mb-2">SYSTEM LOGIN</h1>
-            <input name="username" type="text" placeholder="Username" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none transition-colors" />
-            <input name="password" type="password" placeholder="Password" required className="bg-black border border-[#333] text-white p-3 focus:border-[#00ff41] outline-none transition-colors" />
-            <button type="submit" className="bg-[#00ff41] text-black font-bold p-3 mt-2 hover:bg-white hover:tracking-widest transition-all uppercase">Authorize</button>
+      <div className="flex h-screen items-center justify-center bg-black text-[#00ff41] font-mono">
+        <form action={handleLogin} className="border border-[#00ff41] p-10 shadow-[0_0_20px_#00ff41]">
+          <h1 className="text-2xl mb-5 text-center">ACCESS CONTROL</h1>
+          <input name="username" placeholder="User" className="block w-full bg-black border border-[#00ff41] p-2 mb-3 text-white outline-none" />
+          <input name="password" type="password" placeholder="Pass" className="block w-full bg-black border border-[#00ff41] p-2 mb-3 text-white outline-none" />
+          <button className="w-full bg-[#00ff41] text-black font-bold p-2 hover:bg-white transition">LOGIN</button>
         </form>
-      </main>
+      </div>
     );
   }
 
-  // --- GIAO DIỆN ADMIN CHÍNH ---
   return (
-    <main className="min-h-screen bg-black text-white font-mono relative pb-20">
-        <div className="fixed top-0 left-0 w-full h-full -z-10 opacity-20 pointer-events-none"><MatrixRain /></div>
-        
-        <header className="border-b border-[#333] bg-black/90 sticky top-0 z-50 backdrop-blur-md">
-            <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-                <div className="text-[#00ff41] font-bold text-xl tracking-widest">:: ADMIN DASHBOARD ::</div>
-                <div className="text-gray-500 text-xs">LOGGED IN AS ADMIN</div>
-            </div>
-        </header>
-        
-        <div className="max-w-7xl mx-auto px-6 py-10">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+    <div className="min-h-screen bg-[#050505] text-[#e0e0e0] font-mono p-10">
+      <div className="flex justify-between items-center mb-8 border-b border-[#00ff41] pb-4">
+        <h1 className="text-4xl text-[#00ff41]">ADMIN DASHBOARD</h1>
+        <div className="flex gap-4">
+            <button 
+                onClick={() => setActiveTab('blog')}
+                className={`px-4 py-2 border ${activeTab === 'blog' ? 'bg-[#00ff41] text-black font-bold' : 'text-[#00ff41] border-[#00ff41]'}`}
+            >
+                BLOG MANAGER
+            </button>
+            <button 
+                onClick={() => setActiveTab('content')}
+                className={`px-4 py-2 border ${activeTab === 'content' ? 'bg-[#00ff41] text-black font-bold' : 'text-[#00ff41] border-[#00ff41]'}`}
+            >
+                EDIT SECTIONS
+            </button>
+        </div>
+      </div>
+
+      {/* --- TAB 1: BLOG MANAGER --- */}
+      {activeTab === 'blog' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* FORM */}
+            <div className={`p-5 border-2 ${editingPost ? 'border-yellow-400 shadow-[0_0_15px_yellow]' : 'border-[#00ff41] shadow-[0_0_10px_#00ff41]'} bg-black/50 h-fit sticky top-10`}>
+                <h2 className={`text-2xl mb-5 border-b pb-2 ${editingPost ? 'text-yellow-400' : 'text-[#00ff41]'}`}>
+                    {editingPost ? `>> EDITING MODE: [${editingPost.id.substring(0,5)}...]` : ">> NEW ENTRY"}
+                </h2>
                 
-                {/* CỘT TRÁI: FORM */}
-                <div className="lg:col-span-2">
-                    <form ref={formRef} action={handleSubmit} className={`flex flex-col gap-6 bg-[#0a0a0a] p-8 border shadow-lg relative group transition-colors ${editingPost ? 'border-yellow-600 hover:border-yellow-400' : 'border-[#333] hover:border-[#00ff41]'}`}>
-                        
-                        <div className={`absolute top-0 right-0 text-xs px-2 py-1 text-black font-bold ${editingPost ? 'bg-yellow-600' : 'bg-[#00ff41]'}`}>
-                            {editingPost ? `EDITING MODE (ID: ${editingPost.id.slice(0,6)}...)` : 'NEW ENTRY MODE'}
-                        </div>
-                        
-                        <div className="flex justify-between items-center border-b border-[#333] pb-4 mb-2">
-                            <h1 className={`text-2xl uppercase ${editingPost ? 'text-yellow-500' : 'text-white'}`}>
-                                {editingPost ? "Update Existing Log" : "Write New Log"}
-                            </h1>
-                            {editingPost && (
-                                <button type="button" onClick={handleCancelEdit} className="text-xs text-gray-400 hover:text-white underline">
-                                    Cancel Edit (Create New)
-                                </button>
-                            )}
-                        </div>
-                        
-                        {/* Title */}
-                        <div>
-                            <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Title</label>
-                            <input type="text" name="title" value={title} onChange={e => setTitle(e.target.value)} required className="w-full p-3 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white transition-all" placeholder="Enter title..." />
-                        </div>
+                <form action={handleBlogSubmit} className="flex flex-col gap-4">
+                    {editingPost && <input type="hidden" name="id" value={editingPost.id} />}
+                    
+                    <input name="title" placeholder="Title..." defaultValue={editingPost?.title} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]" />
+                    
+                    <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]">
+                        <option value="my_confessions">My Confessions</option>
+                        <option value="uni_projects">University Projects</option>
+                        <option value="personal_projects">Personal Projects</option>
+                        <option value="achievements">Achievements (Thành tựu)</option>
+                        <option value="it_events">IT Events</option>
+                        <option value="lang_certs">Language Certificates</option>
+                        <option value="tech_certs">Technical Certificates</option>
+                    </select>
 
-                        {/* Category & Language */}
-                        <div className="flex flex-col md:flex-row gap-6">
-                            <div className="flex-1">
-                                <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Category</label>
-                                <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="w-full p-3 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white text-sm">
-                                    <option value="my_confessions">My Confessions</option>
-                                    <option value="uni_projects">University Projects</option>
-                                    <option value="personal_projects">Personal Projects</option>
-                                    <option value="achievements">Achievements</option>
-                                    <option value="it_events">IT Events</option>
-                                    <option value="lang_certs">Language Certificates</option>
-                                    <option value="tech_certs">Technical Certificates</option>
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Language</label>
-                                <div className="flex items-center gap-4 h-12 bg-black border border-[#333] px-4">
-                                    <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="vi" checked={language === 'vi'} onChange={() => setLanguage('vi')} className="accent-[#00ff41]" /> VI</label>
-                                    <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="en" checked={language === 'en'} onChange={() => setLanguage('en')} className="accent-[#00ff41]" /> EN</label>
-                                    <label className="flex items-center gap-2 cursor-pointer hover:text-[#00ff41] text-sm"><input type="radio" name="language" value="jp" checked={language === 'jp'} onChange={() => setLanguage('jp')} className="accent-[#00ff41]" /> JP</label>
-                                </div>
-                            </div>
-                        </div>
+                    <select name="language" defaultValue={editingPost?.language || "vi"} className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]">
+                        <option value="vi">Tiếng Việt</option>
+                        <option value="en">English</option>
+                        <option value="jp">Japanese</option>
+                    </select>
 
-                        {/* Content */}
-                        <div>
-                            <label className="text-gray-500 text-[10px] uppercase mb-1 block tracking-wider">Content</label>
-                            <textarea name="content" rows={12} value={content} onChange={e => setContent(e.target.value)} required className="w-full p-3 bg-black border border-[#333] focus:border-[#00ff41] outline-none text-white font-mono text-sm leading-relaxed" placeholder="Write your content here (Markdown supported)..."></textarea>
-                        </div>
+                    <textarea name="content" placeholder="Content (Markdown supported)..." defaultValue={editingPost?.content} rows={10} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41] font-mono text-sm" />
 
-                        {/* Image Links */}
-                        <div>
-                            <div className="flex justify-between items-end mb-2">
-                                <label className="text-gray-500 text-[10px] uppercase tracking-wider">Image URLs (First link is Cover)</label>
-                                <button type="button" onClick={addLinkField} className="text-[10px] bg-[#222] text-[#00ff41] px-2 py-1 border border-[#333] hover:bg-[#00ff41] hover:text-black transition-colors">+ ADD URL SLOT</button>
+                    {/* Image Links Manager */}
+                    <div className="border border-[#333] p-3">
+                        <label className="text-sm text-[#00ff41] block mb-2">IMAGE LINKS (Direct URL)</label>
+                        {images.map((link, idx) => (
+                            <div key={idx} className="flex gap-2 mb-2">
+                                <input 
+                                    value={link} 
+                                    onChange={(e) => updateLinkField(idx, e.target.value)}
+                                    placeholder="https://example.com/image.jpg"
+                                    className="flex-1 bg-[#111] border border-[#333] p-1 text-xs text-white"
+                                />
+                                <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 font-bold px-2">X</button>
                             </div>
-                            <div className="space-y-3">
-                                {imageLinks.map((link, index) => (
-                                    <div key={index} className="flex gap-2">
-                                        <div className="relative w-full">
-                                            <span className="absolute left-3 top-3 text-gray-600 text-xs font-bold">
-                                                {index === 0 ? "COVER:" : `#${index + 1}:`}
-                                            </span>
-                                            <input type="text" value={link} onChange={(e) => handleLinkChange(index, e.target.value)} className={`w-full p-3 pl-16 bg-black border ${index === 0 ? 'border-[#00ff41]' : 'border-[#333]'} focus:border-[#00ff41] outline-none text-white text-sm transition-all`} placeholder="Paste URL here..." />
-                                        </div>
-                                        {imageLinks.length > 1 && (
-                                            <button type="button" onClick={() => removeLinkField(index)} className="px-3 bg-red-900/30 text-red-500 border border-red-900 hover:bg-red-600 hover:text-white transition-colors">X</button>
-                                        )}
-                                    </div>
-                                ))}
-                            </div>
-                        </div>
+                        ))}
+                        <button type="button" onClick={addLinkField} className="text-xs bg-[#222] text-[#aaa] px-2 py-1 hover:text-white">+ Add Image Slot</button>
+                    </div>
 
-                        {/* Submit Button */}
-                        <button disabled={loading} type="submit" className={`font-bold p-4 mt-2 transition-all uppercase shadow-lg ${editingPost ? 'bg-yellow-600 text-black hover:bg-yellow-500 shadow-yellow-900/50' : 'bg-[#00ff41] text-black hover:bg-white shadow-[#00ff41]/30'}`}>
-                            {loading ? "PROCESSING..." : (editingPost ? "UPDATE LOG ENTRY" : "PUBLISH NEW ENTRY")}
+                    <div className="flex gap-2 mt-2">
+                        <button type="submit" className={`flex-1 font-bold py-2 ${editingPost ? 'bg-yellow-600 text-white' : 'bg-[#00ff41] text-black'} hover:opacity-90`}>
+                            {editingPost ? "UPDATE DATA" : "UPLOAD TO SERVER"}
                         </button>
-                    </form>
-                </div>
+                        {editingPost && (
+                            <button type="button" onClick={() => {setEditingPost(null); setImages([]); setTag("my_confessions");}} className="bg-gray-700 text-white px-4 py-2">
+                                CANCEL
+                            </button>
+                        )}
+                    </div>
+                </form>
+            </div>
 
-                {/* CỘT PHẢI: LIST */}
-                <div className="lg:col-span-1">
-                    <div className="bg-[#0a0a0a] border border-[#333] h-[80vh] flex flex-col shadow-lg">
-                        <div className="p-4 border-b border-[#333] bg-black">
-                            <h2 className="text-[#00ff41] text-xl uppercase font-bold">Database Logs</h2>
-                            <p className="text-gray-600 text-xs mt-1">Total entries: {posts.length}</p>
-                        </div>
-                        
-                        <div className="overflow-y-auto p-4 flex-1 custom-scrollbar space-y-3">
-                            {posts.map((post) => (
-                                <div key={post.id} className={`p-3 border bg-black transition-all group ${editingPost?.id === post.id ? 'border-yellow-500 bg-yellow-900/20' : 'border-[#333] hover:border-[#00ff41]'}`}>
-                                    <div className="flex justify-between items-start mb-2">
-                                        <h3 className={`font-bold text-sm line-clamp-1 w-[80%] ${editingPost?.id === post.id ? 'text-yellow-500' : 'text-white group-hover:text-[#00ff41]'}`}>{post.title}</h3>
-                                        <span className="text-[9px] bg-[#222] px-1 text-gray-400 border border-[#333]">{post.language}</span>
-                                    </div>
-                                    <div className="flex justify-between items-end">
-                                        <div className="text-[10px] text-gray-500">
-                                            <div className="uppercase mb-1">{post.tag}</div>
-                                            <div>{new Date(post.createdAt).toLocaleDateString()}</div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            {/* ĐÃ THÊM LẠI NÚT VIEW Ở ĐÂY */}
-                                            <a href={`/blog/${post.id}`} target="_blank" className="text-[10px] text-gray-400 hover:text-white border border-[#333] px-2 py-1 flex items-center">
-                                                VIEW
-                                            </a>
-                                            <button onClick={() => handleStartEdit(post)} className="text-[10px] text-yellow-500 hover:text-yellow-300 border border-yellow-900/50 px-2 py-1 bg-yellow-900/20">
-                                                EDIT
-                                            </button>
-                                            <button onClick={() => handleDelete(post.id)} className="text-[10px] text-red-500 border border-red-900 px-2 py-1 hover:bg-red-900 hover:text-white transition-colors">DEL</button>
-                                        </div>
-                                    </div>
+            {/* LIST */}
+            <div className="flex flex-col gap-4">
+                <h2 className="text-2xl text-[#00ff41] border-b border-[#00ff41] pb-2">DATABASE LOGS</h2>
+                {posts.map(post => (
+                    <div key={post.id} className="bg-[#0a0a0a] border border-[#333] p-4 hover:border-[#00ff41] transition group">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-bold text-lg text-white group-hover:text-[#00ff41]">{post.title}</h3>
+                                <div className="text-xs text-gray-500 mt-1">
+                                    Tag: <span className="text-[#008f11]">{post.tag}</span> | 
+                                    Lang: {post.language} | 
+                                    ID: {post.id.substring(0, 8)}...
                                 </div>
-                            ))}
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => startEdit(post)} className="text-yellow-500 hover:underline text-sm">[EDIT]</button>
+                                <button onClick={() => handleDelete(post.id)} className="text-red-500 hover:underline text-sm">[DEL]</button>
+                            </div>
                         </div>
                     </div>
-                </div>
+                ))}
             </div>
         </div>
-    </main>
+      )}
+
+      {/* --- TAB 2: SECTION EDIT MANAGER --- */}
+      {activeTab === 'content' && (
+        <div className="max-w-4xl mx-auto border border-[#00ff41] p-6 bg-black/80 shadow-[0_0_20px_rgba(0,255,65,0.2)]">
+            <h2 className="text-2xl text-[#00ff41] mb-6 flex justify-between">
+                <span>EDIT STATIC SECTIONS</span>
+                <span className="text-sm text-gray-400 normal-case">{msg}</span>
+            </h2>
+
+            <form action={handleSectionSubmit} className="flex flex-col gap-6">
+                
+                {/* 1. Chọn Section muốn sửa */}
+                <div>
+                    <label className="block text-[#00ff41] mb-2 font-bold">SELECT SECTION TO EDIT:</label>
+                    <select 
+                        name="sectionKey" 
+                        value={sectionKey} 
+                        onChange={(e) => setSectionKey(e.target.value)}
+                        className="w-full bg-[#111] border border-[#00ff41] p-3 text-xl text-white outline-none"
+                    >
+                        <option value="about">01. ABOUT ME</option>
+                        <option value="career">04. CAREER GOALS</option>
+                        <option value="skills">06. SKILLS</option>
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* ENGLISH */}
+                    <div>
+                        <label className="block text-gray-400 mb-1 text-sm">Content (English)</label>
+                        <textarea 
+                            name="contentEn" 
+                            value={secEn}
+                            onChange={e => setSecEn(e.target.value)}
+                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
+                            placeholder="Write in English..."
+                        />
+                    </div>
+                    {/* VIETNAMESE */}
+                    <div>
+                        <label className="block text-gray-400 mb-1 text-sm">Content (Vietnamese)</label>
+                        <textarea 
+                            name="contentVi" 
+                            value={secVi}
+                            onChange={e => setSecVi(e.target.value)}
+                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
+                            placeholder="Viết tiếng Việt..."
+                        />
+                    </div>
+                    {/* JAPANESE */}
+                    <div>
+                        <label className="block text-gray-400 mb-1 text-sm">Content (Japanese)</label>
+                        <textarea 
+                            name="contentJp" 
+                            value={secJp}
+                            onChange={e => setSecJp(e.target.value)}
+                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
+                            placeholder="日本語..."
+                        />
+                    </div>
+                </div>
+
+                <button type="submit" className="w-full bg-[#00ff41] text-black font-bold py-3 text-xl hover:opacity-90 shadow-[4px_4px_0_#008f11] active:translate-y-1 active:shadow-none transition">
+                    SAVE CHANGES TO DATABASE
+                </button>
+            </form>
+        </div>
+      )}
+
+    </div>
   );
 }

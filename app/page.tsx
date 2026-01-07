@@ -10,7 +10,7 @@ import MatrixRain from "@/components/MatrixRain";
 import TopNav from "@/components/TopNav";
 
 import { translations, Lang } from "@/lib/data"; // Chỉ dùng data tĩnh
-import { getPostsByTag, getAllPosts } from "@/lib/actions"; // Chỉ lấy Blog
+import { getPostsByTag, getAllPosts, getSectionContent } from "@/lib/actions"; 
 
 // Định nghĩa kiểu dữ liệu cho bài viết
 type Post = {
@@ -26,7 +26,7 @@ type Post = {
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
   
-  // --- STATE BLOG & PROJECT (GIỮ LẠI CÁI NÀY) ---
+  // --- STATE BLOG & PROJECT ---
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbUniProjects, setDbUniProjects] = useState<any[]>([]);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -42,22 +42,40 @@ export default function Home() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [dbAchievements, setDbAchievements] = useState<any[]>([]);
 
+  // State lưu nội dung động cho các mục tĩnh (About, Career, Skills)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [dynamicSections, setDynamicSections] = useState<Record<string, any>>({});
+
   const typeWriterRef = useRef<HTMLSpanElement>(null);
   
-  // Biến t chứa toàn bộ chữ từ file tĩnh (An toàn tuyệt đối)
+  // Biến t chứa toàn bộ chữ từ file tĩnh (Fallback an toàn)
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const t = translations[currentLang] as any; 
 
   useEffect(() => {
-    // Chỉ gọi API lấy bài viết, không lấy content nữa
+    // 1. Gọi API lấy bài viết Blog/Project
     getPostsByTag("uni_projects").then(setDbUniProjects);
     getPostsByTag("personal_projects").then(setDbPersonalProjects);
     getPostsByTag("it_events").then(setDbItEvents);
     getPostsByTag("lang_certs").then(setDbLangCerts);
     getPostsByTag("tech_certs").then(setDbTechCerts);
     getPostsByTag("achievements").then(setDbAchievements);
+    
     getAllPosts().then((posts) => {
         if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3));
+    });
+
+    // 2. Gọi API lấy nội dung các section động (About, Career, Skills)
+    Promise.all([
+        getSectionContent("about"),
+        getSectionContent("career"),
+        getSectionContent("skills")
+    ]).then(([about, career, skills]) => {
+        setDynamicSections({
+            about,
+            career,
+            skills
+        });
     });
   }, []);
 
@@ -72,6 +90,17 @@ export default function Home() {
     if (currentLang === 'vi') return `${years} Năm, ${months} Tháng`;
     if (currentLang === 'jp') return `${years} 歳, ${months} ヶ月`;
     return `${years} Years, ${months} Months`;
+  };
+
+  // Hàm helper: Ưu tiên lấy text từ DB, không có thì lấy text mặc định
+  const getSectionText = (key: string, fallbackText: string) => {
+    const data = dynamicSections[key];
+    if (!data) return fallbackText; // Chưa load xong hoặc chưa có trong DB
+
+    if (currentLang === 'en') return data.contentEn || fallbackText;
+    if (currentLang === 'vi') return data.contentVi || fallbackText;
+    if (currentLang === 'jp') return data.contentJp || fallbackText;
+    return fallbackText;
   };
 
   useEffect(() => {
@@ -132,12 +161,15 @@ export default function Home() {
             </div>
         </section>
 
+        {/* SECTION 01: ABOUT ME (Dynamic) */}
         <section id="about" className="content-section">
             <h2>{t.sec_about}</h2>
-            <p>{t.about_line1}</p>
-            <p>{t.about_line2}</p>
+            <p style={{whiteSpace: 'pre-line'}}>
+                {getSectionText("about", `${t.about_line1}\n${t.about_line2}`)}
+            </p>
         </section>
 
+        {/* SECTION 02: PROFILE */}
         <section id="profile" className="content-section">
             <h2>{t.sec_profile}</h2>
             <div className="profile-container">
@@ -159,7 +191,7 @@ export default function Home() {
                         <li><span className="label">{t.lbl_status}</span> <span className="value highlight">{t.val_status}</span></li>
                     </ul>
                 </div>
-                {/* [MỚI] Box 3: Other Info */}
+                {/* Box 3: Other Info */}
                 <div className="profile-box">
                     <h3>{t.box_other}</h3>
                     <ul className="profile-list">
@@ -170,6 +202,7 @@ export default function Home() {
             </div>
         </section>
 
+        {/* SECTION 03: CERTIFICATES */}
         <section id="certificates" className="content-section">
             <h2>{t.sec_cert}</h2>
             <h3 className="carousel-title">{t.cat_lang}</h3>
@@ -209,8 +242,15 @@ export default function Home() {
             </div>
         </section>
 
-        <section id="career" className="content-section"><h2>{t.sec_career}</h2><p>{t.career_desc}</p></section>
-        {/* [MỚI] SECTION 05: ACHIEVEMENTS (Thay thế Hobbies cũ) */}
+        {/* SECTION 04: CAREER GOALS (Dynamic) */}
+        <section id="career" className="content-section">
+            <h2>{t.sec_career}</h2>
+            <p style={{whiteSpace: 'pre-line'}}>
+                {getSectionText("career", t.career_desc)}
+            </p>
+        </section>
+        
+        {/* SECTION 05: ACHIEVEMENTS (Replaced Hobby) */}
         <section id="achievements" className="content-section">
             <h2>{t.sec_achievements}</h2>
             <p style={{marginBottom: '20px', color: '#bbb'}}>{t.achievements_desc}</p>
@@ -237,8 +277,16 @@ export default function Home() {
                 <button className="nav-btn next-btn" onClick={() => scrollCarousel('achievements-list', 1)}>&#10095;</button>
             </div>
         </section>
-        <section id="skills" className="content-section"><h2>{t.sec_skills}</h2><p>HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker, Next.js, PostgreSQL.</p></section>
 
+        {/* SECTION 06: SKILLS (Dynamic) */}
+        <section id="skills" className="content-section">
+            <h2>{t.sec_skills}</h2>
+            <p style={{whiteSpace: 'pre-line'}}>
+                {getSectionText("skills", "HTML5, CSS3, JavaScript, ReactJS, NodeJS, MySQL, Git, Docker, Next.js, PostgreSQL.")}
+            </p>
+        </section>
+
+        {/* SECTION 07: EXPERIENCE */}
         <section id="experience" className="content-section">
             <h2>{t.sec_exp}</h2>
             <div className="profile-container">
@@ -263,6 +311,7 @@ export default function Home() {
             </div>
         </section>
 
+        {/* SECTION 08: PROJECTS */}
         <section id="projects" className="content-section">
             <h2>{t.sec_proj}</h2>
             <h3 className="carousel-title">{t.cat_uni_proj}</h3>
@@ -302,6 +351,7 @@ export default function Home() {
             </div>
         </section>
 
+        {/* SECTION 09: BLOG */}
         <section id="blog" className="content-section">
             <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}>
                 <h2>09. {t.nav_blog}</h2>
@@ -327,6 +377,7 @@ export default function Home() {
             </div>
         </section>
 
+        {/* SECTION 10: GALLERY */}
         <section id="gallery" className="content-section">
              <h2>10. GALLERY</h2> 
              <h3 className="carousel-title">{t.cat_it_event}</h3>
@@ -348,6 +399,7 @@ export default function Home() {
             </div>
         </section>
         
+        {/* SECTION 11: CONTACT */}
         <section id="contact" className="content-section" style={{marginBottom: 50}}>
             <h2>{t.sec_contact}</h2>
             <div className="profile-container">
