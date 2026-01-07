@@ -1,207 +1,314 @@
 "use client";
 
-import { createPost, updatePost, checkAdmin, getAllPosts, deletePost } from "@/lib/actions";
-import { useState, useEffect, useRef } from "react";
-// ĐÃ XÓA MatrixRain
 
-type Post = {
-    id: string;
-    title: string;
-    images: string; 
-    createdAt: Date;
-    tag?: string;
-    language?: string;
-    content?: string;
-};
+import { useState, useEffect } from "react";
+import { checkAdmin, createPost, deletePost, getAllPosts, updatePost, getSectionContent, saveSectionContent } from "@/lib/actions";
+
+// 1. Định nghĩa kiểu dữ liệu để tránh lỗi "Unexpected any"
+interface Post {
+  id: string;
+  title: string;
+  tag: string;
+  language: string;
+  content: string;
+  images: string;
+}
+
+interface SectionData {
+  contentEn: string;
+  contentVi: string;
+  contentJp: string;
+}
 
 export default function AdminPage() {
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
+  const [activeTab, setActiveTab] = useState<'blog' | 'content'>('blog');
+
+  // --- STATES CHO BLOG ---
   const [posts, setPosts] = useState<Post[]>([]);
-  
-  const [editingPost, setEditingPost] = useState<Post | null>(null); 
-  const formRef = useRef<HTMLFormElement>(null); 
-
-  const [imageLinks, setImageLinks] = useState<string[]>([""]);
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
+  const [editingPost, setEditingPost] = useState<Post | null>(null);
   const [tag, setTag] = useState("my_confessions");
-  const [language, setLanguage] = useState("vi");
+  const [images, setImages] = useState<string[]>([]);
 
-  const refreshData = async () => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      getAllPosts().then((data: any) => setPosts(data));
-  };
+  // --- STATES CHO SECTION CONTENT ---
+  const [sectionKey, setSectionKey] = useState("about");
+  const [secEn, setSecEn] = useState("");
+  const [secVi, setSecVi] = useState("");
+  const [secJp, setSecJp] = useState("");
+  const [msg, setMsg] = useState("");
 
-  useEffect(() => { if (isLoggedIn) refreshData(); }, [isLoggedIn]);
+  useEffect(() => {
+    // Load Blog
+    getAllPosts().then((data) => setPosts(data as unknown as Post[]));
+  }, []);
 
-  const handleLogin = async (formData: FormData) => {
-    setLoading(true);
+  // 2. Sửa lỗi "setState synchronously within an effect"
+  useEffect(() => {
+    if (activeTab === 'content') {
+        const fetchSection = async () => {
+            setMsg("Loading...");
+            try {
+                const data = await getSectionContent(sectionKey);
+                if (data) {
+                    // Ép kiểu dữ liệu trả về
+                    const typedData = data as unknown as SectionData;
+                    setSecEn(typedData.contentEn || "");
+                    setSecVi(typedData.contentVi || "");
+                    setSecJp(typedData.contentJp || "");
+                    setMsg("Loaded data from DB.");
+                } else {
+                    setSecEn(""); setSecVi(""); setSecJp("");
+                    setMsg("No data in DB yet (Will create new).");
+                }
+            } catch (error) {
+                console.error(error); // 3. Sửa lỗi 'error' defined but never used
+                setMsg("Error loading data.");
+            }
+        };
+        fetchSection();
+    }
+  }, [sectionKey, activeTab]);
+
+  // --- LOGIC AUTH ---
+  async function handleLogin(formData: FormData) {
     const res = await checkAdmin(formData);
-    setLoading(false);
-    if (res.success) setIsLoggedIn(true);
-    else alert("WRONG PASSWORD!");
-  };
+    if (res.success) setIsAuth(true);
+    else alert("Sai mật khẩu!");
+  }
 
-  const handleSubmit = async (formData: FormData) => {
-    setLoading(true);
-    const validImages = imageLinks.filter(link => link.trim() !== "");
-    formData.set("images", JSON.stringify(validImages));
+  // --- LOGIC BLOG ---
+  const addLinkField = () => setImages([...images, ""]);
+  const removeLinkField = (index: number) => { const newImg = [...images]; newImg.splice(index, 1); setImages(newImg); };
+  const updateLinkField = (index: number, val: string) => { const newImg = [...images]; newImg[index] = val; setImages(newImg); };
+
+  async function handleBlogSubmit(formData: FormData) {
+    const jsonImages = JSON.stringify(images.filter(img => img.trim() !== ""));
+    formData.set("images", jsonImages);
 
     if (editingPost) {
-        formData.append("id", editingPost.id);
         await updatePost(formData);
-        alert("UPDATED SUCCESSFULLY!");
+        alert("Cập nhật bài viết thành công!");
+
         setEditingPost(null);
     } else {
         await createPost(formData);
         alert("POST CREATED!");
     }
-    
-    if (formRef.current) formRef.current.reset();
-    setTitle(""); setContent(""); setImageLinks([""]);
-    setLoading(false);
-    refreshData();
-  };
+    setImages([]);
+    const updated = await getAllPosts();
+    setPosts(updated as unknown as Post[]);
+  }
 
-  const handleDelete = async (id: string) => {
-      if (confirm("DELETE THIS POST?")) {
-          await deletePost(id);
-          refreshData();
-      }
-  };
+  function startEdit(post: Post) {
+    setEditingPost(post);
+    setTag(post.tag);
+    try { setImages(JSON.parse(post.images)); } catch { setImages([]); }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 
-  const handleStartEdit = (post: Post) => {
-      setEditingPost(post);
-      setTitle(post.title);
-      setContent(post.content || "");
-      setTag(post.tag || "my_confessions");
-      setLanguage(post.language || "vi");
-      try { setImageLinks(JSON.parse(post.images)); } catch { setImageLinks([""]); }
-      window.scrollTo({ top: 0, behavior: "smooth" });
-  };
+  async function handleDelete(id: string) {
+    if(!confirm("Xóa thật hả?")) return;
+    await deletePost(id);
+    const updated = await getAllPosts();
+    setPosts(updated as unknown as Post[]);
+  }
 
-  const handleAddImageLink = () => setImageLinks([...imageLinks, ""]);
-  const handleImageLinkChange = (index: number, value: string) => {
-      const newLinks = [...imageLinks];
-      newLinks[index] = value;
-      setImageLinks(newLinks);
-  };
-  const handleRemoveImageLink = (index: number) => {
-      const newLinks = imageLinks.filter((_, i) => i !== index);
-      setImageLinks(newLinks);
-  };
+  // --- LOGIC SECTION CONTENT ---
+  async function handleSectionSubmit(formData: FormData) {
+    setMsg("Saving...");
+    const res = await saveSectionContent(formData);
+    if (res.success) setMsg("Saved successfully!");
+    else setMsg("Error saving!");
+  }
 
-  if (!isLoggedIn) {
+  if (!isAuth) {
     return (
-      <main className="min-h-screen flex items-center justify-center font-mono">
-        <form action={handleLogin} className="border border-pink-500 dark:border-[#00ff41] p-10 bg-white/90 dark:bg-black/90 shadow-2xl rounded-lg">
-          <h1 className="text-2xl mb-6 text-center text-pink-600 dark:text-[#00ff41] tracking-widest font-bold">ADMIN ACCESS</h1>
-          <input name="username" placeholder="Username" className="block w-full mb-4 p-3 bg-gray-100 dark:bg-[#111] text-black dark:text-[#00ff41] border border-gray-300 dark:border-[#333] outline-none focus:border-pink-500 dark:focus:border-[#00ff41]" required />
-          <input type="password" name="password" placeholder="Password" className="block w-full mb-6 p-3 bg-gray-100 dark:bg-[#111] text-black dark:text-[#00ff41] border border-gray-300 dark:border-[#333] outline-none focus:border-pink-500 dark:focus:border-[#00ff41]" required />
-          <button disabled={loading} className="w-full bg-pink-600 dark:bg-[#00ff41] text-white dark:text-black font-bold py-3 hover:opacity-80 transition-opacity">
-            {loading ? "VERIFYING..." : "LOGIN"}
-          </button>
+      <div className="flex h-screen items-center justify-center bg-black text-[#00ff41] font-mono">
+        <form action={handleLogin} className="border border-[#00ff41] p-10 shadow-[0_0_20px_#00ff41]">
+          <h1 className="text-2xl mb-5 text-center">ACCESS CONTROL</h1>
+          <input name="username" placeholder="User" className="block w-full bg-black border border-[#00ff41] p-2 mb-3 text-white outline-none" />
+          <input name="password" type="password" placeholder="Pass" className="block w-full bg-black border border-[#00ff41] p-2 mb-3 text-white outline-none" />
+          <button className="w-full bg-[#00ff41] text-black font-bold p-2 hover:bg-white transition">LOGIN</button>
         </form>
-      </main>
+      </div>
     );
   }
 
   return (
-    <main className="min-h-screen p-10 font-mono text-gray-800 dark:text-white">
-        <div className="max-w-6xl mx-auto">
-            <h1 className="text-4xl mb-8 border-b-2 border-pink-500 dark:border-[#00ff41] pb-4 text-pink-600 dark:text-[#00ff41]">
-                ADMIN DASHBOARD {editingPost && <span className="text-yellow-500 text-lg ml-4">(EDITING MODE)</span>}
-            </h1>
+    <div className="min-h-screen bg-[#050505] text-[#e0e0e0] font-mono p-10">
+      <div className="flex justify-between items-center mb-8 border-b border-[#00ff41] pb-4">
+        <h1 className="text-4xl text-[#00ff41]">ADMIN DASHBOARD</h1>
+        <div className="flex gap-4">
+            <button 
+                onClick={() => setActiveTab('blog')}
+                className={`px-4 py-2 border ${activeTab === 'blog' ? 'bg-[#00ff41] text-black font-bold' : 'text-[#00ff41] border-[#00ff41]'}`}
+            >
+                BLOG MANAGER
+            </button>
+            <button 
+                onClick={() => setActiveTab('content')}
+                className={`px-4 py-2 border ${activeTab === 'content' ? 'bg-[#00ff41] text-black font-bold' : 'text-[#00ff41] border-[#00ff41]'}`}
+            >
+                EDIT SECTIONS
+            </button>
+        </div>
+      </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-10">
-                {/* FORM */}
-                <div className="bg-white/90 dark:bg-[#0a0a0a] p-6 border border-pink-300 dark:border-[#333] shadow-lg h-fit">
-                    <form ref={formRef} action={handleSubmit} className="flex flex-col gap-4">
-                        <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">TITLE</label>
-                            <input name="title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Post Title" className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none" required />
-                        </div>
+      {/* --- TAB 1: BLOG MANAGER --- */}
+      {activeTab === 'blog' && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-10">
+            {/* FORM */}
+            <div className={`p-5 border-2 ${editingPost ? 'border-yellow-400 shadow-[0_0_15px_yellow]' : 'border-[#00ff41] shadow-[0_0_10px_#00ff41]'} bg-black/50 h-fit sticky top-10`}>
+                <h2 className={`text-2xl mb-5 border-b pb-2 ${editingPost ? 'text-yellow-400' : 'text-[#00ff41]'}`}>
+                    {editingPost ? `>> EDITING MODE: [${editingPost.id.substring(0,5)}...]` : ">> NEW ENTRY"}
+                </h2>
+                
+                <form action={handleBlogSubmit} className="flex flex-col gap-4">
+                    {editingPost && <input type="hidden" name="id" value={editingPost.id} />}
+                    
+                    <input name="title" placeholder="Title..." defaultValue={editingPost?.title} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]" />
+                    
+                    <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]">
+                        <option value="my_confessions">My Confessions</option>
+                        <option value="uni_projects">University Projects</option>
+                        <option value="personal_projects">Personal Projects</option>
+                        <option value="achievements">Achievements (Thành tựu)</option>
+                        <option value="it_events">IT Events</option>
+                        <option value="lang_certs">Language Certificates</option>
+                        <option value="tech_certs">Technical Certificates</option>
+                    </select>
 
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">TAG</label>
-                                <select name="tag" value={tag} onChange={e => setTag(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none">
-                                    <option value="my_confessions">My Confessions</option>
-                                    <option value="uni_projects">University Projects</option>
-                                    <option value="personal_projects">Personal Projects</option>
-                                    <option value="achievements">Achievements</option>
-                                    <option value="it_events">IT Events</option>
-                                    <option value="lang_certs">Language Certificates</option>
-                                    <option value="tech_certs">Technical Certificates</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">LANGUAGE</label>
-                                <select name="language" value={language} onChange={e => setLanguage(e.target.value)} className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none">
-                                    <option value="vi">Vietnamese</option>
-                                    <option value="en">English</option>
-                                    <option value="jp">Japanese</option>
-                                </select>
-                            </div>
-                        </div>
+                    <select name="language" defaultValue={editingPost?.language || "vi"} className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41]">
+                        <option value="vi">Tiếng Việt</option>
+                        <option value="en">English</option>
+                        <option value="jp">Japanese</option>
+                    </select>
 
-                        {/* IMAGE LINKS INPUT */}
-                        <div className="border border-dashed border-gray-300 dark:border-[#333] p-4">
-                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-2 block font-bold">IMAGE LINKS (URL)</label>
-                            {imageLinks.map((link, index) => (
-                                <div key={index} className="flex gap-2 mb-2">
-                                    <input 
-                                        type="text" 
-                                        value={link}
-                                        onChange={(e) => handleImageLinkChange(index, e.target.value)}
-                                        placeholder="https://example.com/image.jpg" 
-                                        className="w-full p-2 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] text-sm focus:border-pink-500 dark:focus:border-[#00ff41] outline-none" 
-                                    />
-                                    <button type="button" onClick={() => handleRemoveImageLink(index)} className="text-red-500 px-2 border border-red-500 hover:bg-red-500 hover:text-white">X</button>
-                                </div>
-                            ))}
-                            <button type="button" onClick={handleAddImageLink} className="text-xs bg-gray-200 dark:bg-[#222] px-3 py-1 hover:bg-gray-300 dark:hover:bg-[#333] transition">+ ADD LINK</button>
-                        </div>
+                    <textarea name="content" placeholder="Content (Markdown supported)..." defaultValue={editingPost?.content} rows={10} required className="bg-[#111] border border-[#333] p-2 text-white outline-none focus:border-[#00ff41] font-mono text-sm" />
 
-                        <div>
-                            <label className="text-xs text-gray-500 dark:text-gray-400 mb-1 block">CONTENT (MARKDOWN)</label>
-                            <textarea name="content" value={content} onChange={e => setContent(e.target.value)} placeholder="# Hello World..." rows={10} className="w-full p-3 bg-gray-50 dark:bg-[#111] border border-gray-300 dark:border-[#333] focus:border-pink-500 dark:focus:border-[#00ff41] outline-none font-mono text-sm" required />
-                        </div>
-
-                        <button disabled={loading} className={`w-full font-bold py-3 mt-2 ${editingPost ? 'bg-yellow-600 hover:bg-yellow-500 text-white' : 'bg-pink-600 dark:bg-[#00ff41] text-white dark:text-black hover:opacity-90'}`}>
-                            {loading ? "PROCESSING..." : (editingPost ? "UPDATE POST" : "CREATE POST")}
-                        </button>
-                        {editingPost && <button type="button" onClick={() => { setEditingPost(null); setTitle(""); setContent(""); setImageLinks([""]); }} className="w-full bg-gray-500 text-white py-2 mt-2">CANCEL EDIT</button>}
-                    </form>
-                </div>
-
-                {/* LIST */}
-                <div className="bg-white/90 dark:bg-[#0a0a0a] p-6 border border-pink-300 dark:border-[#333] shadow-lg max-h-[800px] overflow-y-auto">
-                    <h2 className="text-xl mb-4 text-gray-700 dark:text-white font-bold border-b border-gray-200 dark:border-[#333] pb-2">POSTS ({posts.length})</h2>
-                    <div className="space-y-4">
-                        {posts.map(post => (
-                            <div key={post.id} className="border border-gray-200 dark:border-[#333] p-3 hover:border-pink-400 dark:hover:border-[#00ff41] transition-colors bg-white dark:bg-black">
-                                <div className="flex justify-between items-start">
-                                    <div>
-                                        <h3 className="font-bold text-gray-800 dark:text-white truncate max-w-[200px]">{post.title}</h3>
-                                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1 flex gap-3">
-                                            <div className="uppercase mb-1 bg-gray-100 dark:bg-[#222] px-1">{post.tag}</div>
-                                            <div>{new Date(post.createdAt).toLocaleDateString()}</div>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <a href={`/blog/${post.id}`} target="_blank" className="text-[10px] text-blue-500 border border-blue-500 px-2 py-1 hover:bg-blue-500 hover:text-white transition">VIEW</a>
-                                        <button onClick={() => handleStartEdit(post)} className="text-[10px] text-yellow-600 border border-yellow-600 px-2 py-1 hover:bg-yellow-600 hover:text-white transition">EDIT</button>
-                                        <button onClick={() => handleDelete(post.id)} className="text-[10px] text-red-500 border border-red-500 px-2 py-1 hover:bg-red-500 hover:text-white transition">DEL</button>
-                                    </div>
-                                </div>
+                    {/* Image Links Manager */}
+                    <div className="border border-[#333] p-3">
+                        <label className="text-sm text-[#00ff41] block mb-2">IMAGE LINKS (Direct URL)</label>
+                        {images.map((link, idx) => (
+                            <div key={idx} className="flex gap-2 mb-2">
+                                <input 
+                                    value={link} 
+                                    onChange={(e) => updateLinkField(idx, e.target.value)}
+                                    placeholder="https://example.com/image.jpg"
+                                    className="flex-1 bg-[#111] border border-[#333] p-1 text-xs text-white"
+                                />
+                                <button type="button" onClick={() => removeLinkField(idx)} className="text-red-500 font-bold px-2">X</button>
                             </div>
                         ))}
+                        <button type="button" onClick={addLinkField} className="text-xs bg-[#222] text-[#aaa] px-2 py-1 hover:text-white">+ Add Image Slot</button>
                     </div>
-                </div>
+
+                    <div className="flex gap-2 mt-2">
+                        <button type="submit" className={`flex-1 font-bold py-2 ${editingPost ? 'bg-yellow-600 text-white' : 'bg-[#00ff41] text-black'} hover:opacity-90`}>
+                            {editingPost ? "UPDATE DATA" : "UPLOAD TO SERVER"}
+                        </button>
+                        {editingPost && (
+                            <button type="button" onClick={() => {setEditingPost(null); setImages([]); setTag("my_confessions");}} className="bg-gray-700 text-white px-4 py-2">
+                                CANCEL
+                            </button>
+                        )}
+                    </div>
+                </form>
+            </div>
+
+            {/* LIST */}
+            <div className="flex flex-col gap-4">
+                <h2 className="text-2xl text-[#00ff41] border-b border-[#00ff41] pb-2">DATABASE LOGS</h2>
+                {posts.map(post => (
+                    <div key={post.id} className="bg-[#0a0a0a] border border-[#333] p-4 hover:border-[#00ff41] transition group">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-bold text-lg text-white group-hover:text-[#00ff41]">{post.title}</h3>
+                                <div className="text-xs text-gray-500 mt-1">
+                                    Tag: <span className="text-[#008f11]">{post.tag}</span> | 
+                                    Lang: {post.language} | 
+                                    ID: {post.id.substring(0, 8)}...
+                                </div>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => startEdit(post)} className="text-yellow-500 hover:underline text-sm">[EDIT]</button>
+                                <button onClick={() => handleDelete(post.id)} className="text-red-500 hover:underline text-sm">[DEL]</button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
-    </main>
+      )}
+
+      {/* --- TAB 2: SECTION EDIT MANAGER --- */}
+      {activeTab === 'content' && (
+        <div className="max-w-4xl mx-auto border border-[#00ff41] p-6 bg-black/80 shadow-[0_0_20px_rgba(0,255,65,0.2)]">
+            <h2 className="text-2xl text-[#00ff41] mb-6 flex justify-between">
+                <span>EDIT STATIC SECTIONS</span>
+                <span className="text-sm text-gray-400 normal-case">{msg}</span>
+            </h2>
+
+            <form action={handleSectionSubmit} className="flex flex-col gap-6">
+                
+                {/* 1. Chọn Section muốn sửa */}
+                <div>
+                    <label className="block text-[#00ff41] mb-2 font-bold">SELECT SECTION TO EDIT:</label>
+                    <select 
+                        name="sectionKey" 
+                        value={sectionKey} 
+                        onChange={(e) => setSectionKey(e.target.value)}
+                        className="w-full bg-[#111] border border-[#00ff41] p-3 text-xl text-white outline-none"
+                    >
+                        <option value="about">01. ABOUT ME</option>
+                        <option value="career">04. CAREER GOALS</option>
+                        <option value="skills">06. SKILLS</option>
+                    </select>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {/* ENGLISH */}
+                    <div>
+                        <label className="block text-gray-400 mb-1 text-sm">Content (English)</label>
+                        <textarea 
+                            name="contentEn" 
+                            value={secEn}
+                            onChange={e => setSecEn(e.target.value)}
+                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
+                            placeholder="Write in English..."
+                        />
+                    </div>
+                    {/* VIETNAMESE */}
+                    <div>
+                        <label className="block text-gray-400 mb-1 text-sm">Content (Vietnamese)</label>
+                        <textarea 
+                            name="contentVi" 
+                            value={secVi}
+                            onChange={e => setSecVi(e.target.value)}
+                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
+                            placeholder="Viết tiếng Việt..."
+                        />
+                    </div>
+                    {/* JAPANESE */}
+                    <div>
+                        <label className="block text-gray-400 mb-1 text-sm">Content (Japanese)</label>
+                        <textarea 
+                            name="contentJp" 
+                            value={secJp}
+                            onChange={e => setSecJp(e.target.value)}
+                            className="w-full bg-[#111] border border-[#333] p-3 text-white h-60 focus:border-[#00ff41]" 
+                            placeholder="日本語..."
+                        />
+                    </div>
+                </div>
+
+                <button type="submit" className="w-full bg-[#00ff41] text-black font-bold py-3 text-xl hover:opacity-90 shadow-[4px_4px_0_#008f11] active:translate-y-1 active:shadow-none transition">
+                    SAVE CHANGES TO DATABASE
+                </button>
+            </form>
+        </div>
+      )}
+
+    </div>
   );
 }
