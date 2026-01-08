@@ -145,7 +145,16 @@ export default function AdminPage() {
                         try { setHeroJp({ ...DEFAULT_HERO, ...JSON.parse(typedData.contentJp) }); } catch { setHeroJp(DEFAULT_HERO); }
                     }
                     else if (isConfigSection) {
-                        try { setConfig(JSON.parse(typedData.contentEn)); } catch { setConfig({ resumeUrl: "", isOpenForWork: true }); }
+                        try { 
+                            const parsed = JSON.parse(typedData.contentEn);
+                            // [FIX] Ép kiểu an toàn: Nếu thiếu thì lấy giá trị mặc định
+                            setConfig({ 
+                                resumeUrl: parsed.resumeUrl || "", 
+                                isOpenForWork: parsed.isOpenForWork ?? true 
+                            });
+                        } catch { 
+                            setConfig({ resumeUrl: "", isOpenForWork: true }); 
+                        }
                     }
                     else { 
                         setSecEn(typedData.contentEn || "");
@@ -281,7 +290,8 @@ export default function AdminPage() {
                             <div>
                                 <label className="block text-gray-400 mb-1">Link Download CV (PDF URL)</label>
                                 <input 
-                                    value={config.resumeUrl} 
+                                    // [FIX] Thêm || "" để không bao giờ bị undefined
+                                    value={config.resumeUrl || ""} 
                                     onChange={e => setConfig({...config, resumeUrl: e.target.value})} 
                                     className="w-full bg-black border border-[#555] text-white p-3 focus:border-[#00ff41] outline-none" 
                                     placeholder="/files/my_cv.pdf or https://..."
@@ -291,7 +301,8 @@ export default function AdminPage() {
                                 <label className="text-gray-400">Status &quot;Open for Work&quot;:</label>
                                 <input 
                                     type="checkbox" 
-                                    checked={config.isOpenForWork} 
+                                    // [FIX] Thêm !! để ép về boolean (true/false)
+                                    checked={!!config.isOpenForWork} 
                                     onChange={e => setConfig({...config, isOpenForWork: e.target.checked})} 
                                     className="w-6 h-6 accent-[#00ff41]" 
                                 />
