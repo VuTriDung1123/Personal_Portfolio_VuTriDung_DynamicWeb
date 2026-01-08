@@ -124,6 +124,7 @@ export const translations = {
     about_line1: "Tôi là sinh viên năm 3 ngành CNTT tại UTH với niềm đam mê mãnh liệt với lập trình. Và tôi cũng rất thích toán học.",
     about_line2: "Tôi thích biến những ý tưởng phức tạp thành hiện thực thông qua những dòng code tinh tế.",
     
+    
     sec_profile: "02. HỒ SƠ",
     box_personal: "Thông Tin Cá Nhân",
     lbl_name: "Họ Tên:",
