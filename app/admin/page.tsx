@@ -9,78 +9,135 @@ interface BoxItem { label: string; value: string; }
 interface SectionBox { id: string; title: string; items: BoxItem[]; }
 interface SectionData { contentEn: string; contentVi: string; contentJp: string; }
 
-interface HeroData {
-    fullName: string;
-    nickName1: string;
-    nickName2: string;
-    avatarUrl: string;
-    greeting: string;
-    description: string;
-    typewriter: string;
-}
+// Types cho Hero & Config
+interface HeroData { fullName: string; nickName1: string; nickName2: string; avatarUrl: string; greeting: string; description: string; typewriter: string; }
+interface ConfigData { resumeUrl: string; isOpenForWork: boolean; }
 
-interface ConfigData {
-    resumeUrl: string;
-    isOpenForWork: boolean;
+// [MỚI] Types cho Experience nâng cao
+interface ExpItem {
+    id: string;
+    time: string;       // VD: 1/2025 - 3/2025
+    role: string;       // VD: Công ty A - Dev
+    details: string[];  // Các gạch đầu dòng
+}
+interface ExpGroup {
+    id: string;
+    title: string;      // VD: IT Experience
+    items: ExpItem[];
 }
 
 // --- CONSTANTS ---
-const DEFAULT_HERO: HeroData = { 
-    fullName: "Vũ Trí Dũng", 
-    nickName1: "David Miller", 
-    nickName2: "Akina Aoi", 
-    avatarUrl: "", 
-    greeting: "Hi, I am", 
-    description: "", 
-    typewriter: '["Developer", "Student"]' 
-};
+const DEFAULT_HERO: HeroData = { fullName: "Vũ Trí Dũng", nickName1: "David Miller", nickName2: "Akina Aoi", avatarUrl: "", greeting: "Hi, I am", description: "", typewriter: '["Developer", "Student"]' };
 
-// --- SUB-COMPONENT: BOX EDITOR ---
+// --- SUB-COMPONENT: BOX EDITOR (Cho Profile, Contact) ---
 interface BoxEditorProps {
     lang: 'en' | 'vi' | 'jp';
     data: SectionBox[];
-    onAddBox: () => void;
-    onRemoveBox: (index: number) => void;
-    onUpdateTitle: (index: number, val: string) => void;
-    onAddItem: (boxIndex: number) => void;
-    onRemoveItem: (boxIndex: number, itemIndex: number) => void;
-    onUpdateItem: (boxIndex: number, itemIndex: number, field: 'label' | 'value', val: string) => void;
+    onUpdate: (newData: SectionBox[]) => void;
 }
 
-const BoxEditor = ({ lang, data, onAddBox, onRemoveBox, onUpdateTitle, onAddItem, onRemoveItem, onUpdateItem }: BoxEditorProps) => {
+const BoxEditor = ({ lang, data, onUpdate }: BoxEditorProps) => {
+    const addBox = () => onUpdate([...data, { id: Date.now().toString(), title: "New Group", items: [] }]);
+    const removeBox = (idx: number) => { const n = [...data]; n.splice(idx, 1); onUpdate(n); };
+    const updateTitle = (idx: number, v: string) => { const n = [...data]; n[idx].title = v; onUpdate(n); };
+    const addItem = (idx: number) => { const n = [...data]; n[idx].items.push({ label: "", value: "" }); onUpdate(n); };
+    const removeItem = (bIdx: number, iIdx: number) => { const n = [...data]; n[bIdx].items.splice(iIdx, 1); onUpdate(n); };
+    const updateItem = (bIdx: number, iIdx: number, field: 'label'|'value', v: string) => { const n = [...data]; n[bIdx].items[iIdx][field] = v; onUpdate(n); };
+
     return (
-        <div className="bg-[#111] p-4 border border-[#333] mb-4 relative group">
-            <h3 className="text-[#00ff41] font-bold mb-2 uppercase border-b border-[#333] pb-1">LANG: {lang}</h3>
+        <div className="bg-[#111] p-4 border border-[#333] mb-4">
+            <h3 className="text-[#00ff41] font-bold mb-2 uppercase border-b border-[#333]">LANG: {lang}</h3>
             {data.map((box, bIdx) => (
                 <div key={box.id} className="mb-4 pl-4 border-l-2 border-yellow-600 hover:border-[#00ff41]">
-                    <div className="flex gap-2 mb-2"><input value={box.title} onChange={(e) => onUpdateTitle(bIdx, e.target.value)} className="bg-black border border-[#555] text-white p-1 flex-1" /><button type="button" onClick={() => onRemoveBox(bIdx)} className="text-red-500 text-xs">[DEL]</button></div>
-                    <div className="pl-4 space-y-1">{box.items.map((item, iIdx) => (<div key={iIdx} className="flex gap-2"><input value={item.label} onChange={(e) => onUpdateItem(bIdx, iIdx, 'label', e.target.value)} className="bg-[#222] border border-[#444] text-[#aaa] w-1/3 text-xs" /><input value={item.value} onChange={(e) => onUpdateItem(bIdx, iIdx, 'value', e.target.value)} className="bg-[#222] border border-[#444] text-white flex-1 text-xs" /><button type="button" onClick={() => onRemoveItem(bIdx, iIdx)} className="text-red-500 text-xs">x</button></div>))}<button type="button" onClick={() => onAddItem(bIdx)} className="text-[#00ff41] text-xs border border-[#00ff41] px-2 hover:bg-[#00ff41] hover:text-black">+ Item</button></div>
+                    <div className="flex gap-2 mb-2"><input value={box.title} onChange={(e) => updateTitle(bIdx, e.target.value)} className="bg-black border border-[#555] text-white p-1 flex-1" placeholder="Group Title" /><button type="button" onClick={() => removeBox(bIdx)} className="text-red-500 text-xs">[DEL]</button></div>
+                    <div className="pl-4 space-y-1">{box.items.map((item, iIdx) => (<div key={iIdx} className="flex gap-2"><input value={item.label} onChange={(e) => updateItem(bIdx, iIdx, 'label', e.target.value)} className="bg-[#222] border border-[#444] text-[#aaa] w-1/3 text-xs" placeholder="Label" /><input value={item.value} onChange={(e) => updateItem(bIdx, iIdx, 'value', e.target.value)} className="bg-[#222] border border-[#444] text-white flex-1 text-xs" placeholder="Value" /><button type="button" onClick={() => removeItem(bIdx, iIdx)} className="text-red-500 text-xs">x</button></div>))}<button type="button" onClick={() => addItem(bIdx)} className="text-[#00ff41] text-xs border border-[#00ff41] px-2 hover:bg-[#00ff41] hover:text-black">+ Item</button></div>
                 </div>
-            ))}<button type="button" onClick={onAddBox} className="w-full bg-[#222] text-white py-1 hover:bg-[#333] text-sm">+ GROUP</button>
+            ))}<button type="button" onClick={addBox} className="w-full bg-[#222] text-white py-1 hover:bg-[#333] text-sm">+ GROUP</button>
         </div>
     );
 };
 
-// --- SUB-COMPONENT: HERO EDITOR (Move outside) ---
-interface HeroEditorProps {
-    lang: 'en'|'vi'|'jp';
-    data: HeroData;
-    onUpdate: (field: keyof HeroData, val: string) => void;
+// --- [MỚI] SUB-COMPONENT: EXPERIENCE EDITOR ---
+interface ExpEditorProps {
+    lang: 'en' | 'vi' | 'jp';
+    data: ExpGroup[];
+    onUpdate: (newData: ExpGroup[]) => void;
 }
 
+const ExpEditor = ({ lang, data, onUpdate }: ExpEditorProps) => {
+    const addGroup = () => onUpdate([...data, { id: Date.now().toString(), title: "New Category (e.g IT)", items: [] }]);
+    const removeGroup = (idx: number) => { const n = [...data]; n.splice(idx, 1); onUpdate(n); };
+    const updateTitle = (idx: number, v: string) => { const n = [...data]; n[idx].title = v; onUpdate(n); };
+    
+    const addItem = (gIdx: number) => { const n = [...data]; n[gIdx].items.push({ id: Date.now().toString(), time: "", role: "", details: [] }); onUpdate(n); };
+    const removeItem = (gIdx: number, iIdx: number) => { const n = [...data]; n[gIdx].items.splice(iIdx, 1); onUpdate(n); };
+    
+    const updateItem = (gIdx: number, iIdx: number, field: keyof ExpItem, v: string) => { 
+        const n = [...data]; 
+        // @ts-expect-error: Details handled separately
+        n[gIdx].items[iIdx][field] = v; 
+        onUpdate(n); 
+    };
+
+    const updateDetails = (gIdx: number, iIdx: number, text: string) => {
+        const n = [...data];
+        // Tách dòng thành mảng
+        n[gIdx].items[iIdx].details = text.split('\n');
+        onUpdate(n);
+    };
+
+    return (
+        <div className="bg-[#111] p-4 border border-[#333] mb-4">
+            <h3 className="text-[#00ff41] font-bold mb-2 uppercase border-b border-[#333] flex justify-between">
+                <span>EXPERIENCE ({lang})</span>
+                <span className="text-[10px] text-gray-500">One bullet point per line</span>
+            </h3>
+            {data.map((group, gIdx) => (
+                <div key={group.id} className="mb-6 pl-2 border-l-4 border-blue-600 bg-blue-900/10 p-2">
+                    {/* Category Header */}
+                    <div className="flex gap-2 mb-3">
+                        <input value={group.title} onChange={e => updateTitle(gIdx, e.target.value)} className="bg-black border border-blue-500 text-blue-300 font-bold p-2 flex-1" placeholder="Category Name (e.g. IT)" />
+                        <button type="button" onClick={() => removeGroup(gIdx)} className="text-red-500 font-bold px-2 border border-red-500 hover:bg-red-500 hover:text-black">DEL CAT</button>
+                    </div>
+
+                    {/* Job Items */}
+                    <div className="space-y-4">
+                        {group.items.map((item, iIdx) => (
+                            <div key={item.id} className="bg-[#000] border border-[#333] p-3 ml-4 relative group">
+                                <button type="button" onClick={() => removeItem(gIdx, iIdx)} className="absolute top-2 right-2 text-red-500 text-xs border border-red-500 px-1 hover:bg-red-500 hover:text-white">X</button>
+                                <div className="grid grid-cols-1 gap-2 mb-2">
+                                    <input value={item.time} onChange={e => updateItem(gIdx, iIdx, 'time', e.target.value)} className="bg-[#222] text-[#00ff41] text-xs p-1 border border-[#444]" placeholder="Time (e.g. 1/2025 - 3/2025)" />
+                                    <input value={item.role} onChange={e => updateItem(gIdx, iIdx, 'role', e.target.value)} className="bg-[#222] text-white font-bold text-sm p-1 border border-[#444]" placeholder="Company - Role" />
+                                </div>
+                                <textarea 
+                                    value={item.details.join('\n')} 
+                                    onChange={e => updateDetails(gIdx, iIdx, e.target.value)}
+                                    className="w-full bg-[#111] text-gray-300 text-xs p-2 border border-[#444] h-24 focus:border-[#00ff41] outline-none"
+                                    placeholder="- Work detail 1&#10;- Work detail 2&#10;(Enter for new line)"
+                                />
+                            </div>
+                        ))}
+                        <button type="button" onClick={() => addItem(gIdx)} className="ml-4 text-xs bg-[#222] text-blue-300 px-3 py-1 border border-blue-500 hover:bg-blue-500 hover:text-black transition">+ Add Job</button>
+                    </div>
+                </div>
+            ))}
+            <button type="button" onClick={addGroup} className="w-full mt-4 bg-[#222] text-white py-2 border border-dashed border-[#555] hover:border-[#00ff41] hover:text-[#00ff41] transition">+ ADD NEW CATEGORY</button>
+        </div>
+    );
+};
+
+// --- SUB-COMPONENT: HERO EDITOR ---
+interface HeroEditorProps { lang: 'en'|'vi'|'jp'; data: HeroData; onUpdate: (field: keyof HeroData, val: string) => void; }
 const HeroEditor = ({ lang, data, onUpdate }: HeroEditorProps) => (
     <div className="bg-[#111] p-4 border border-[#333]">
         <h3 className="text-[#00ff41] font-bold mb-4 uppercase border-b border-[#333]">HERO INFO ({lang})</h3>
         <div className="space-y-3">
-            <div><label className="text-xs text-gray-500">Greeting (Ex: Hi, I am)</label><input value={data.greeting} onChange={e=>onUpdate('greeting', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
+            <div><label className="text-xs text-gray-500">Greeting</label><input value={data.greeting} onChange={e=>onUpdate('greeting', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
             <div><label className="text-xs text-gray-500">Full Name</label><input value={data.fullName} onChange={e=>onUpdate('fullName', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
-            <div className="flex gap-2">
-                <div className="flex-1"><label className="text-xs text-gray-500">Nickname 1</label><input value={data.nickName1} onChange={e=>onUpdate('nickName1', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
-                <div className="flex-1"><label className="text-xs text-gray-500">Nickname 2</label><input value={data.nickName2} onChange={e=>onUpdate('nickName2', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
-            </div>
-            <div><label className="text-xs text-gray-500">Typewriter Texts (JSON Array)</label><input value={data.typewriter} onChange={e=>onUpdate('typewriter', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" placeholder='["Dev", "Student"]' /></div>
+            <div className="flex gap-2"><div className="flex-1"><label className="text-xs text-gray-500">Nick 1</label><input value={data.nickName1} onChange={e=>onUpdate('nickName1', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div><div className="flex-1"><label className="text-xs text-gray-500">Nick 2</label><input value={data.nickName2} onChange={e=>onUpdate('nickName2', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div></div>
+            <div><label className="text-xs text-gray-500">Typewriter (JSON)</label><input value={data.typewriter} onChange={e=>onUpdate('typewriter', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
             <div><label className="text-xs text-gray-500">Description</label><textarea value={data.description} onChange={e=>onUpdate('description', e.target.value)} rows={3} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
-            <div><label className="text-xs text-gray-500">Avatar URL (Chung)</label><input value={data.avatarUrl} onChange={e=>onUpdate('avatarUrl', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
+            <div><label className="text-xs text-gray-500">Avatar URL</label><input value={data.avatarUrl} onChange={e=>onUpdate('avatarUrl', e.target.value)} className="w-full bg-[#222] text-white p-2 border border-[#444]" /></div>
         </div>
     </div>
 );
@@ -105,7 +162,7 @@ export default function AdminPage() {
   const [secVi, setSecVi] = useState("");
   const [secJp, setSecJp] = useState("");
 
-  // 2. Box Data
+  // 2. Box Data (Profile, Contact)
   const [boxesEn, setBoxesEn] = useState<SectionBox[]>([]);
   const [boxesVi, setBoxesVi] = useState<SectionBox[]>([]);
   const [boxesJp, setBoxesJp] = useState<SectionBox[]>([]);
@@ -118,13 +175,19 @@ export default function AdminPage() {
   // 4. Config Data
   const [config, setConfig] = useState<ConfigData>({ resumeUrl: "", isOpenForWork: true });
 
-  const isBoxSection = ['profile', 'experience', 'contact'].includes(sectionKey);
+  // [MỚI] 5. Experience Data
+  const [expEn, setExpEn] = useState<ExpGroup[]>([]);
+  const [expVi, setExpVi] = useState<ExpGroup[]>([]);
+  const [expJp, setExpJp] = useState<ExpGroup[]>([]);
+
+  const isBoxSection = ['profile', 'contact'].includes(sectionKey);
+  const isExpSection = sectionKey === 'experience'; // Tách riêng Experience
   const isHeroSection = sectionKey === 'hero';
   const isConfigSection = sectionKey === 'global_config';
 
   useEffect(() => { getAllPosts().then((data) => setPosts(data as unknown as Post[])); }, []);
 
-  // LOAD DATA LOGIC
+  // LOAD DATA
   useEffect(() => {
     if (activeTab === 'content') {
         const fetchSection = async () => {
@@ -134,7 +197,12 @@ export default function AdminPage() {
                 if (data) {
                     const typedData = data as unknown as SectionData;
                     
-                    if (isBoxSection) {
+                    if (isExpSection) {
+                        try { setExpEn(JSON.parse(typedData.contentEn)); } catch { setExpEn([]); }
+                        try { setExpVi(JSON.parse(typedData.contentVi)); } catch { setExpVi([]); }
+                        try { setExpJp(JSON.parse(typedData.contentJp)); } catch { setExpJp([]); }
+                    }
+                    else if (isBoxSection) {
                         try { setBoxesEn(JSON.parse(typedData.contentEn)); } catch { setBoxesEn([]); }
                         try { setBoxesVi(JSON.parse(typedData.contentVi)); } catch { setBoxesVi([]); }
                         try { setBoxesJp(JSON.parse(typedData.contentJp)); } catch { setBoxesJp([]); }
@@ -147,14 +215,8 @@ export default function AdminPage() {
                     else if (isConfigSection) {
                         try { 
                             const parsed = JSON.parse(typedData.contentEn);
-                            // [FIX] Ép kiểu an toàn: Nếu thiếu thì lấy giá trị mặc định
-                            setConfig({ 
-                                resumeUrl: parsed.resumeUrl || "", 
-                                isOpenForWork: parsed.isOpenForWork ?? true 
-                            });
-                        } catch { 
-                            setConfig({ resumeUrl: "", isOpenForWork: true }); 
-                        }
+                            setConfig({ resumeUrl: parsed.resumeUrl || "", isOpenForWork: parsed.isOpenForWork ?? true });
+                        } catch { setConfig({ resumeUrl: "", isOpenForWork: true }); }
                     }
                     else { 
                         setSecEn(typedData.contentEn || "");
@@ -165,6 +227,7 @@ export default function AdminPage() {
                     // Reset
                     setSecEn(""); setSecVi(""); setSecJp("");
                     setBoxesEn([]); setBoxesVi([]); setBoxesJp([]);
+                    setExpEn([]); setExpVi([]); setExpJp([]);
                     setHeroEn(DEFAULT_HERO); setHeroVi(DEFAULT_HERO); setHeroJp(DEFAULT_HERO);
                     setConfig({ resumeUrl: "", isOpenForWork: true });
                 }
@@ -173,7 +236,7 @@ export default function AdminPage() {
         };
         fetchSection();
     }
-  }, [sectionKey, activeTab, isBoxSection, isHeroSection, isConfigSection]);
+  }, [sectionKey, activeTab, isBoxSection, isHeroSection, isConfigSection, isExpSection]);
 
   async function handleLogin(formData: FormData) { const res = await checkAdmin(formData); if (res.success) setIsAuth(true); else alert("Wrong Password!"); }
   const addLinkField = () => setImages([...images, ""]);
@@ -187,15 +250,6 @@ export default function AdminPage() {
   function startEdit(post: Post) { setEditingPost(post); setTag(post.tag); try { setImages(JSON.parse(post.images)); } catch { setImages([]); } window.scrollTo({ top: 0, behavior: 'smooth' }); }
   async function handleDelete(id: string) { if(!confirm("Delete?")) return; await deletePost(id); setPosts(await getAllPosts() as unknown as Post[]); }
 
-  // BOX HELPERS
-  const updateBoxState = (lang: 'en'|'vi'|'jp', newBoxes: SectionBox[]) => { if(lang==='en') setBoxesEn(newBoxes); else if(lang==='vi') setBoxesVi(newBoxes); else setBoxesJp(newBoxes); };
-  const addBox = (l: 'en'|'vi'|'jp') => updateBoxState(l, [...(l==='en'?boxesEn:l==='vi'?boxesVi:boxesJp), { id: Date.now().toString(), title: "New Group", items: [] }]);
-  const removeBox = (l: 'en'|'vi'|'jp', i: number) => { const c = [...(l==='en'?boxesEn:l==='vi'?boxesVi:boxesJp)]; c.splice(i, 1); updateBoxState(l, c); };
-  const updateBoxTitle = (l: 'en'|'vi'|'jp', i: number, v: string) => { const c = [...(l==='en'?boxesEn:l==='vi'?boxesVi:boxesJp)]; c[i].title = v; updateBoxState(l, c); };
-  const addItem = (l: 'en'|'vi'|'jp', bi: number) => { const c = [...(l==='en'?boxesEn:l==='vi'?boxesVi:boxesJp)]; c[bi].items.push({label:"", value:""}); updateBoxState(l, c); };
-  const removeItem = (l: 'en'|'vi'|'jp', bi: number, ii: number) => { const c = [...(l==='en'?boxesEn:l==='vi'?boxesVi:boxesJp)]; c[bi].items.splice(ii, 1); updateBoxState(l, c); };
-  const updateItem = (l: 'en'|'vi'|'jp', bi: number, ii: number, f: 'label'|'value', v: string) => { const c = [...(l==='en'?boxesEn:l==='vi'?boxesVi:boxesJp)]; c[bi].items[ii][f] = v; updateBoxState(l, c); };
-
   // HERO HELPERS
   const updateHero = (lang: 'en'|'vi'|'jp', field: keyof HeroData, val: string) => {
       const setter = lang === 'en' ? setHeroEn : (lang === 'vi' ? setHeroVi : setHeroJp);
@@ -205,7 +259,11 @@ export default function AdminPage() {
   async function handleSectionSubmit(formData: FormData) {
     if (isSaving) return; setIsSaving(true); setMsg(">> SAVING...");
 
-    if (isBoxSection) {
+    if (isExpSection) {
+        formData.set("contentEn", JSON.stringify(expEn));
+        formData.set("contentVi", JSON.stringify(expVi));
+        formData.set("contentJp", JSON.stringify(expJp));
+    } else if (isBoxSection) {
         formData.set("contentEn", JSON.stringify(boxesEn));
         formData.set("contentVi", JSON.stringify(boxesVi));
         formData.set("contentJp", JSON.stringify(boxesJp));
@@ -272,7 +330,7 @@ export default function AdminPage() {
                         <option value="profile">02. PROFILE (Boxes)</option>
                         <option value="career">04. CAREER GOALS (Text)</option>
                         <option value="skills">06. SKILLS (Text)</option>
-                        <option value="experience">07. EXPERIENCE (Boxes)</option>
+                        <option value="experience">07. EXPERIENCE (CV Style)</option>
                         <option value="contact">11. CONTACT (Boxes)</option>
                     </select>
                 </div>
@@ -289,34 +347,26 @@ export default function AdminPage() {
                         <div className="flex flex-col gap-4">
                             <div>
                                 <label className="block text-gray-400 mb-1">Link Download CV (PDF URL)</label>
-                                <input 
-                                    // [FIX] Thêm || "" để không bao giờ bị undefined
-                                    value={config.resumeUrl || ""} 
-                                    onChange={e => setConfig({...config, resumeUrl: e.target.value})} 
-                                    className="w-full bg-black border border-[#555] text-white p-3 focus:border-[#00ff41] outline-none" 
-                                    placeholder="/files/my_cv.pdf or https://..."
-                                />
+                                <input value={config.resumeUrl || ""} onChange={e => setConfig({...config, resumeUrl: e.target.value})} className="w-full bg-black border border-[#555] text-white p-3 focus:border-[#00ff41] outline-none" />
                             </div>
                             <div className="flex items-center gap-3">
                                 <label className="text-gray-400">Status &quot;Open for Work&quot;:</label>
-                                <input 
-                                    type="checkbox" 
-                                    // [FIX] Thêm !! để ép về boolean (true/false)
-                                    checked={!!config.isOpenForWork} 
-                                    onChange={e => setConfig({...config, isOpenForWork: e.target.checked})} 
-                                    className="w-6 h-6 accent-[#00ff41]" 
-                                />
-                                <span className={config.isOpenForWork ? "text-[#00ff41]" : "text-red-500"}>
-                                    {config.isOpenForWork ? "ENABLED (Showing Green Dot)" : "DISABLED (Busy)"}
-                                </span>
+                                <input type="checkbox" checked={!!config.isOpenForWork} onChange={e => setConfig({...config, isOpenForWork: e.target.checked})} className="w-6 h-6 accent-[#00ff41]" />
+                                <span className={config.isOpenForWork ? "text-[#00ff41]" : "text-red-500"}>{config.isOpenForWork ? "ENABLED" : "DISABLED"}</span>
                             </div>
                         </div>
                     </div>
+                ) : isExpSection ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <ExpEditor lang="en" data={expEn} onUpdate={setExpEn} />
+                        <ExpEditor lang="vi" data={expVi} onUpdate={setExpVi} />
+                        <ExpEditor lang="jp" data={expJp} onUpdate={setExpJp} />
+                    </div>
                 ) : isBoxSection ? (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <BoxEditor lang="en" data={boxesEn} onAddBox={()=>addBox('en')} onRemoveBox={i=>removeBox('en',i)} onUpdateTitle={(i,v)=>updateBoxTitle('en',i,v)} onAddItem={i=>addItem('en',i)} onRemoveItem={(b,i)=>removeItem('en',b,i)} onUpdateItem={(b,i,f,v)=>updateItem('en',b,i,f,v)} />
-                        <BoxEditor lang="vi" data={boxesVi} onAddBox={()=>addBox('vi')} onRemoveBox={i=>removeBox('vi',i)} onUpdateTitle={(i,v)=>updateBoxTitle('vi',i,v)} onAddItem={i=>addItem('vi',i)} onRemoveItem={(b,i)=>removeItem('vi',b,i)} onUpdateItem={(b,i,f,v)=>updateItem('vi',b,i,f,v)} />
-                        <BoxEditor lang="jp" data={boxesJp} onAddBox={()=>addBox('jp')} onRemoveBox={i=>removeBox('jp',i)} onUpdateTitle={(i,v)=>updateBoxTitle('jp',i,v)} onAddItem={i=>addItem('jp',i)} onRemoveItem={(b,i)=>removeItem('jp',b,i)} onUpdateItem={(b,i,f,v)=>updateItem('jp',b,i,f,v)} />
+                        <BoxEditor lang="en" data={boxesEn} onUpdate={setBoxesEn} />
+                        <BoxEditor lang="vi" data={boxesVi} onUpdate={setBoxesVi} />
+                        <BoxEditor lang="jp" data={boxesJp} onUpdate={setBoxesJp} />
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
