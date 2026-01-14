@@ -68,7 +68,7 @@ const HeroLoader = () => (
     </div>
 );
 
-// --- [MỚI] NO DATA COMPONENT ---
+// --- NO DATA COMPONENT ---
 const NoDataDisplay = ({ section }: { section: string }) => (
     <div className="w-full border border-dashed border-[#333] p-6 bg-[#111] text-center flex flex-col items-center justify-center gap-2">
         <span className="text-3xl">🚫</span>
@@ -96,6 +96,10 @@ export default function Home() {
   // Dynamic Content State
   const [dynamicSections, setDynamicSections] = useState<Record<string, SectionData>>({});
   const [globalConfig, setGlobalConfig] = useState<ConfigData | null>(null);
+
+  // --- [MỚI] STATE BỘ LỌC DỰ ÁN ---
+  const [projLang, setProjLang] = useState<string>("ALL");
+  const [projSort, setProjSort] = useState<"newest" | "oldest">("newest");
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
   const t: Translation = translations[currentLang]; 
@@ -133,21 +137,11 @@ export default function Home() {
     });
   }, []);
 
-  const calculateAge = () => {
-    const birthDate = new Date("2005-11-23");
-    const now = new Date();
-    let years = now.getFullYear() - birthDate.getFullYear();
-    let months = now.getMonth() - birthDate.getMonth();
-    const days = now.getDate() - birthDate.getDate();
-    if (months < 0 || (months === 0 && days < 0)) { years--; months += 12; }
-    return currentLang === 'vi' ? `${years} Năm` : (currentLang === 'jp' ? `${years} 歳` : `${years} Years`);
-  };
-
-  // [SỬA ĐỔI] Trả về null nếu không có data (không dùng fallbackText nữa)
+  // Helpers
   const getSectionText = (key: string) => {
     const data = dynamicSections[key]; if (!data) return null;
     const content = currentLang==='en'?data.contentEn : (currentLang==='vi'?data.contentVi : data.contentJp);
-    return content || null; // Trả về null nếu string rỗng
+    return content || null;
   };
 
   const getSectionBoxes = (key: string): SectionBox[] | null => {
@@ -198,10 +192,25 @@ export default function Home() {
   const experienceBoxes = getSectionBoxes("experience");
   const contactBoxes = getSectionBoxes("contact");
   
-  // Text content
   const aboutText = getSectionText("about");
   const careerText = getSectionText("career");
   const skillsText = getSectionText("skills");
+
+  // --- [MỚI] HÀM LỌC & SẮP XẾP CHO HACKER THEME ---
+  const filterProjects = (projects: Post[]) => {
+      let res = [...projects];
+      // 1. Lọc ngôn ngữ
+      if (projLang !== "ALL") {
+          res = res.filter(p => p.language?.toLowerCase() === projLang.toLowerCase());
+      }
+      // 2. Sắp xếp thời gian
+      res.sort((a, b) => {
+          const tA = new Date(a.createdAt).getTime();
+          const tB = new Date(b.createdAt).getTime();
+          return projSort === "newest" ? tB - tA : tA - tB;
+      });
+      return res;
+  };
 
   return (
     <main>
@@ -258,6 +267,7 @@ export default function Home() {
             )}
         </section>
 
+        {/* 03. CERTIFICATES */}
         <section id="certificates" className="content-section"><h2>{t.sec_cert}</h2><h3 className="carousel-title">{t.cat_lang}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button><div className="carousel-container" id="lang-certs">{dbLangCerts.length > 0 ? (dbLangCerts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO CERTIFICATES</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('lang-certs', 1)}>&#10095;</button></div><h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_tech}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button><div className="carousel-container" id="tech-certs">{dbTechCerts.length > 0 ? (dbTechCerts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO CERTIFICATES</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('tech-certs', 1)}>&#10095;</button></div></section>
 
         {/* 04. CAREER */}
@@ -268,6 +278,7 @@ export default function Home() {
             )}
         </section>
         
+        {/* 05. ACHIEVEMENTS */}
         <section id="achievements" className="content-section"><h2>{t.sec_achievements}</h2><p style={{marginBottom: '20px', color: '#bbb'}}>{t.achievements_desc}</p><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('achievements-list', -1)}>&#10094;</button><div className="carousel-container" id="achievements-list">{dbAchievements.length > 0 ? (dbAchievements.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ITEM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO ACHIEVEMENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('achievements-list', 1)}>&#10095;</button></div></section>
 
         {/* 06. SKILLS */}
@@ -288,10 +299,91 @@ export default function Home() {
             )}
         </section>
 
-        <section id="projects" className="content-section"><h2>{t.sec_proj}</h2><h3 className="carousel-title">{t.cat_uni_proj}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('uni-projects', -1)} >&#10094;</button><div className="carousel-container" id="uni-projects">{dbUniProjects.length > 0 ? (dbUniProjects.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO PROJECTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('uni-projects', 1)} >&#10095;</button></div><h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_personal_proj}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('personal-projects', -1)} >&#10094;</button><div className="carousel-container" id="personal-projects">{dbPersonalProjects.length > 0 ? (dbPersonalProjects.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; READ LOG</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO PROJECTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('personal-projects', 1)} >&#10095;</button></div></section>
+        {/* 08. PROJECTS (NÂNG CẤP BỘ LỌC HACKER STYLE) */}
+        <section id="projects" className="content-section">
+            <h2>{t.sec_proj}</h2>
 
+            {/* --- PANEL BỘ LỌC (HACKER UI) --- */}
+            <div className="mb-8 border border-[#00ff41] p-4 bg-[#050505] flex flex-wrap gap-4 justify-between items-center shadow-[0_0_10px_rgba(0,255,65,0.2)]">
+                <div className="flex gap-4 items-center flex-wrap">
+                    <span className="text-[#00ff41] font-bold text-sm tracking-widest">&gt; FILTER_LANG:</span>
+                    {[
+                        {v: "ALL", l: "ALL"},
+                        {v: "vi", l: "VI"},
+                        {v: "en", l: "EN"},
+                        {v: "jp", l: "JP"}
+                    ].map(opt => (
+                        <button 
+                            key={opt.v}
+                            onClick={() => setProjLang(opt.v)}
+                            className={`px-3 py-1 font-mono text-sm border border-[#00ff41] transition-all hover:shadow-[0_0_5px_#00ff41]
+                                ${projLang === opt.v ? 'bg-[#00ff41] text-black font-bold' : 'bg-transparent text-[#00ff41]'}`}
+                        >
+                            [{opt.l}]
+                        </button>
+                    ))}
+                </div>
+                
+                <button 
+                    onClick={() => setProjSort(prev => prev === "newest" ? "oldest" : "newest")}
+                    className="flex items-center gap-2 text-[#00ff41] hover:text-white transition-colors text-sm font-mono border-b border-transparent hover:border-[#00ff41]"
+                >
+                    <span>{projSort === "newest" ? "▼" : "▲"}</span>
+                    <span>SORT: {projSort === "newest" ? "LATEST" : "OLDEST"}</span>
+                </button>
+            </div>
+
+            {/* HIỂN THỊ DANH SÁCH ĐÃ LỌC */}
+            {[
+                { title: t.cat_uni_proj, data: dbUniProjects, id: 'uni-projects' },
+                { title: t.cat_personal_proj, data: dbPersonalProjects, id: 'personal-projects' }
+            ].map((cat, idx) => {
+                const filtered = filterProjects(cat.data);
+
+                return (
+                    <div key={idx}>
+                        <h3 className="carousel-title">
+                            {cat.title} <span className="text-sm opacity-60">({filtered.length})</span>
+                        </h3>
+                        <div className="carousel-wrapper">
+                            <button className="nav-btn prev-btn" onClick={() => scrollCarousel(cat.id, -1)} >&#10094;</button>
+                            <div className="carousel-container" id={cat.id}>
+                                {filtered.length > 0 ? (filtered.map((post) => (
+                                    <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                        <div className="relative h-[160px] w-full overflow-hidden border-b border-[#00ff41]">
+                                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: '100%', width: '100%', objectFit: 'cover'}} />
+                                            {/* Nhãn ngôn ngữ trên ảnh (Style Hacker) */}
+                                            {post.language && (
+                                                <div className="absolute top-0 right-0 bg-black border-l border-b border-[#00ff41] px-2 py-1 text-[10px] text-[#00ff41] font-mono font-bold">
+                                                    {post.language.toUpperCase()}
+                                                </div>
+                                            )}
+                                        </div>
+                                        <div className="card-info">
+                                            <h4>{post.title}</h4>
+                                            <div className="flex justify-between items-center mt-1">
+                                                <span className="text-gray-500 text-[10px] font-mono">{new Date(post.createdAt).toLocaleDateString()}</span>
+                                                <p className="text-[#00ff41] text-xs">&gt;&gt; READ LOG</p>
+                                            </div>
+                                        </div>
+                                    </Link>
+                                ))) : (
+                                    <div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">
+                                        NO DATA MATCHING FILTER [{projLang}]
+                                    </div>
+                                )}
+                            </div>
+                            <button className="nav-btn next-btn" onClick={() => scrollCarousel(cat.id, 1)} >&#10095;</button>
+                        </div>
+                    </div>
+                );
+            })}
+        </section>
+
+        {/* 09. BLOG */}
         <section id="blog" className="content-section"><div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}><h2>09. {t.nav_blog}</h2><Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>{`View All >>>`}</Link></div><div className="carousel-wrapper"><div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>{latestPosts.length > 0 ? (latestPosts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p style={{fontSize: '0.9rem', color: '#aaa', margin: '5px 0'}}>{new Date(post.createdAt).toLocaleDateString()}</p><p className="text-[#00ff41] text-xs">&gt;&gt; ACCESS LOG</p></div></Link>))) : (<div style={{color: '#888', fontStyle: 'italic', padding: '20px'}}>[SYSTEM: NO LOGS FOUND]</div>)}</div></div></section>
 
+        {/* 10. GALLERY */}
         <section id="gallery" className="content-section"><h2>10. GALLERY</h2> <h3 className="carousel-title">{t.cat_it_event}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button><div className="carousel-container" id="it-gallery">{dbItEvents.length > 0 ? (dbItEvents.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO EVENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button></div></section>
         
         {/* 11. CONTACT */}
