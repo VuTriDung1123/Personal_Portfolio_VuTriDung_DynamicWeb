@@ -144,3 +144,16 @@ nav#navbar {
 }
 
 @keyframes blink { 50% { border-color: transparent; } }
+
+
+/* Thêm Class hỗ trợ nút chuyển Sakura */
+.btn-sakura {
+    border-color: #ff69b4 !important;
+    color: #ff69b4 !important;
+    text-shadow: 0 0 5px #ff69b4;
+}
+.btn-sakura:hover {
+    background-color: #ff69b4 !important;
+    color: white !important;
+    box-shadow: 0 0 20px #ff69b4 !important;
+}
