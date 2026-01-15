@@ -1,144 +1,243 @@
 "use client";
 
 /* eslint-disable @next/next/no-img-element */
-
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import TopNav from "@/components/TopNav";
-import { translations, Lang } from "@/lib/data";
 import { getAllPosts } from "@/lib/actions";
+import MatrixRain from "@/components/MatrixRain"; // [MỚI] Import Matrix Rain
 
-export default function BlogListingPage() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const [posts, setPosts] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [currentLang, setCurrentLang] = useState<Lang>("en");
-    
-    const [selectedTag, setSelectedTag] = useState("all");
-    const [sortOrder, setSortOrder] = useState("newest");
+// --- TYPES ---
+type Post = { 
+    id: string; 
+    title: string; 
+    images: string; 
+    createdAt: Date | string; 
+    tag?: string; 
+    language?: string; 
+    content?: string; 
+};
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const t = translations[currentLang] as any;
-    
-    useEffect(() => {
-        getAllPosts().then((data) => {
-            setPosts(data);
-            setLoading(false);
-        });
-    }, []);
+// --- DATA: TAGS ---
+const ALL_TAGS = [
+    { value: "ALL", label: "ALL" },
+    { value: "uni_projects", label: "UNI PROJECTS" },
+    { value: "personal_projects", label: "PERSONAL PROJECTS" },
+    { value: "it_events", label: "IT EVENTS" },
+    { value: "lang_certs", label: "LANG CERTS" },
+    { value: "tech_certs", label: "TECH CERTS" },
+    { value: "achievements", label: "ACHIEVEMENTS" }
+];
 
-    const filteredPosts = useMemo(() => {
-        let result = [...posts];
-        if (selectedTag !== "all") {
-            result = result.filter(post => post.tag === selectedTag);
-        }
-        result.sort((a, b) => {
-            const dateA = new Date(a.createdAt).getTime();
-            const dateB = new Date(b.createdAt).getTime();
-            return sortOrder === "newest" ? dateB - dateA : dateA - dateB;
-        });
-        return result;
-    }, [posts, selectedTag, sortOrder]);
+export default function BlogPage() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Filter States
+  const [search, setSearch] = useState("");
+  const [selectedTag, setSelectedTag] = useState("ALL");
+  const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
 
-    const getCoverImage = (jsonString: string) => {
-        try {
-            const arr = JSON.parse(jsonString);
-            return arr.length > 0 ? arr[0] : "https://placehold.co/300x200/000/00ff41?text=No+Image";
-        } catch {
-            return "https://placehold.co/300x200/000/00ff41?text=Error";
-        }
-    };
+  // Fetch Data
+  useEffect(() => {
+    getAllPosts().then((data) => {
+        if (data) setPosts(data as unknown as Post[]);
+        setTimeout(() => setIsLoading(false), 800); // Giả lập loading chút cho ngầu
+    });
+  }, []);
 
-    return (
-        <main className="min-h-screen relative font-mono text-gray-800 dark:text-white">
-            <TopNav t={t} currentLang={currentLang} setCurrentLang={setCurrentLang} />
+  // Filter Logic
+  const filteredPosts = posts.filter(post => {
+      const matchSearch = post.title.toLowerCase().includes(search.toLowerCase());
+      const matchTag = selectedTag === "ALL" || post.tag === selectedTag;
+      return matchSearch && matchTag;
+  }).sort((a, b) => {
+      const timeA = new Date(a.createdAt).getTime();
+      const timeB = new Date(b.createdAt).getTime();
+      return sortOrder === "newest" ? timeB - timeA : timeA - timeB;
+  });
+
+  const getCover = (json: string) => { 
+      try { const arr = JSON.parse(json); return (arr.length > 0 && arr[0]) ? arr[0] : "https://placehold.co/600x400/000/00ff41?text=NO+IMAGE"; } catch { return "https://placehold.co/600x400/000/00ff41?text=ERROR"; } 
+  };
+
+  return (
+    <main style={{
+        minHeight: '100vh',
+        fontFamily: "'VT323', monospace", // Font Pixel
+        color: '#e0e0e0',
+        position: 'relative'
+    }}>
+        {/* [MỚI] 1. NỀN MATRIX RAIN */}
+        <div style={{position: 'fixed', inset: 0, zIndex: -1}}>
+            <MatrixRain />
+        </div>
+
+        {/* Nút Back về Home */}
+        <div style={{position: 'fixed', top: '20px', left: '20px', zIndex: 50}}>
+            <Link href="/" style={{
+                background: 'rgba(0,0,0,0.8)', border: '1px solid #00ff41', color: '#00ff41',
+                padding: '8px 16px', fontWeight: 'bold', fontSize: '1.1rem', textDecoration: 'none',
+                boxShadow: '0 0 10px rgba(0,255,65,0.3)', display: 'block'
+            }}>
+                &lt;&lt; HOME_SYSTEM
+            </Link>
+        </div>
+
+        <div style={{maxWidth: '1200px', margin: '0 auto', padding: '100px 20px 50px'}}>
             
-            <div className="pt-32 px-6 md:px-10 max-w-7xl mx-auto">
-                <h1 className="text-4xl md:text-5xl text-pink-600 dark:text-[#00ff41] border-l-8 border-pink-600 dark:border-[#00ff41] pl-6 mb-8 uppercase tracking-widest drop-shadow-sm">
-                    SYSTEM LOGS <span className="text-gray-500 dark:text-white text-lg block md:inline md:ml-4">{"// ARCHIVE_DATABASE"}</span>
+            {/* Header */}
+            <div style={{textAlign: 'center', marginBottom: '50px'}}>
+                <h1 style={{
+                    fontSize: '4rem', color: '#00ff41', textShadow: '2px 2px 0 #008f11', 
+                    marginBottom: '10px', lineHeight: 1
+                }}>
+                    SYSTEM_LOGS // ARCHIVE
                 </h1>
+                <p style={{fontSize: '1.5rem', color: '#bbb'}}>
+                    &lt; Accessing global database of projects & activities... /&gt;
+                </p>
+            </div>
 
-                {/* Toolbar */}
-                <div className="flex flex-col md:flex-row gap-4 mb-10 bg-white/80 dark:bg-[rgba(10,10,10,0.8)] p-4 border border-pink-200 dark:border-[#333] shadow-lg backdrop-blur-sm">
-                    <div className="flex-1">
-                        <label className="text-gray-500 text-xs block mb-1 uppercase">{"// Filter by Category:"}</label>
-                        <select 
-                            value={selectedTag} 
-                            onChange={(e) => setSelectedTag(e.target.value)}
-                            className="w-full bg-white dark:bg-black text-pink-600 dark:text-[#00ff41] border border-gray-300 dark:border-[#333] p-2 focus:border-pink-500 dark:focus:border-[#00ff41] outline-none uppercase text-sm"
-                        >
-                            <option value="all">:: ALL CATEGORIES ::</option>
-                            <option value="my_confessions">My Confessions</option>
-                            <option value="uni_projects">University Projects</option>
-                            <option value="personal_projects">Personal Projects</option>
-                            <option value="it_events">IT Events</option>
-                            <option value="lang_certs">Language Certificates</option>
-                            <option value="tech_certs">Technical Certificates</option>
-                        </select>
+            {/* --- BỘ LỌC (STYLE HACKER) --- */}
+            <div style={{
+                marginBottom: '50px', padding: '25px',
+                background: 'rgba(5, 10, 5, 0.9)', border: '1px solid #00ff41',
+                display: 'flex', flexDirection: 'column', gap: '20px',
+                boxShadow: '0 0 20px rgba(0,255,65,0.1)'
+            }}>
+                {/* Dòng 1: Search & Sort */}
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '15px', justifyContent: 'space-between', alignItems: 'center'}}>
+                    {/* Search Input */}
+                    <div style={{flex: 1, minWidth: '250px'}}>
+                        <input 
+                            type="text" 
+                            placeholder="[SEARCH_QUERY]..."
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            style={{
+                                width: '100%', padding: '12px 20px', 
+                                background: 'black', border: '1px solid #00ff41', color: '#00ff41',
+                                fontSize: '1.2rem', fontFamily: 'inherit', outline: 'none'
+                            }}
+                        />
                     </div>
 
-                    <div className="flex-1 md:max-w-xs">
-                        <label className="text-gray-500 text-xs block mb-1 uppercase">{"// Sort by Date:"}</label>
-                        <select 
-                            value={sortOrder} 
-                            onChange={(e) => setSortOrder(e.target.value)}
-                            className="w-full bg-white dark:bg-black text-pink-600 dark:text-[#00ff41] border border-gray-300 dark:border-[#333] p-2 focus:border-pink-500 dark:focus:border-[#00ff41] outline-none uppercase text-sm"
-                        >
-                            <option value="newest">Newest First (▼)</option>
-                            <option value="oldest">Oldest First (▲)</option>
-                        </select>
-                    </div>
-
-                    <div className="flex items-end pb-2">
-                        <span className="text-gray-500 dark:text-gray-400 text-xs font-mono">
-                            Found: <strong className="text-black dark:text-white">{filteredPosts.length}</strong> logs
-                        </span>
-                    </div>
+                    {/* Sort Toggle */}
+                    <button 
+                        onClick={() => setSortOrder(prev => prev === "newest" ? "oldest" : "newest")}
+                        style={{
+                            padding: '12px 25px', background: 'black', border: '1px solid #00ff41',
+                            color: '#00ff41', fontWeight: 'bold', cursor: 'pointer', fontSize: '1.1rem',
+                            display: 'flex', alignItems: 'center', gap: '8px', fontFamily: 'inherit'
+                        }}
+                    >
+                        {sortOrder === "newest" ? "▼ NEWEST_FIRST" : "▲ OLDEST_FIRST"}
+                    </button>
                 </div>
 
-                {/* Post Grid */}
-                {loading ? (
-                    <div className="text-center py-20 animate-pulse text-pink-600 dark:text-[#00ff41]">LOADING DATA...</div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-20">
-                        {filteredPosts.length > 0 ? (
-                            filteredPosts.map((post) => (
-                                <Link key={post.id} href={`/blog/${post.id}`} className="group block bg-white/90 dark:bg-[rgba(10,10,10,0.8)] border border-pink-200 dark:border-[#333] hover:border-pink-500 dark:hover:border-[#00ff41] transition-all overflow-hidden shadow-md hover:-translate-y-1">
-                                    <div className="h-48 overflow-hidden border-b border-pink-100 dark:border-[#333] relative">
-                                        <img 
-                                            src={getCoverImage(post.images)} 
-                                            alt={post.title} 
-                                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 opacity-90 group-hover:opacity-100" 
-                                        />
-                                        <div className="absolute top-0 right-0 flex">
-                                            <span className="bg-pink-500 dark:bg-[#00ff41] text-white dark:text-black text-xs font-bold px-2 py-1 uppercase">
-                                                {post.tag || "LOG"}
-                                            </span>
-                                        </div>
-                                    </div>
+                {/* Dòng 2: Tags Filter */}
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: '10px', justifyContent: 'center'}}>
+                    {ALL_TAGS.map(tag => (
+                        <button
+                            key={tag.value}
+                            onClick={() => setSelectedTag(tag.value)}
+                            style={{
+                                padding: '6px 14px', border: '1px solid #00ff41',
+                                cursor: 'pointer', fontSize: '1rem', fontWeight: 'bold',
+                                transition: 'all 0.2s', fontFamily: 'inherit',
+                                background: selectedTag === tag.value ? '#00ff41' : 'transparent',
+                                color: selectedTag === tag.value ? 'black' : '#00ff41',
+                                boxShadow: selectedTag === tag.value ? '0 0 10px #00ff41' : 'none'
+                            }}
+                        >
+                            [{tag.label}]
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            {/* --- DANH SÁCH BÀI VIẾT --- */}
+            {isLoading ? (
+                <div style={{textAlign: 'center', color: '#00ff41', fontSize: '2rem', padding: '50px'}}>
+                    LOADING_DATA... <span className="cursor-blink">_</span>
+                </div>
+            ) : (
+                <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '30px'}}>
+                    {filteredPosts.length > 0 ? (
+                        filteredPosts.map(post => (
+                            <Link key={post.id} href={`/blog/${post.id}`} style={{display: 'block', textDecoration: 'none'}}>
+                                <div className="card" style={{
+                                    height: '100%', display: 'flex', flexDirection: 'column', 
+                                    background: 'rgba(10,10,10,0.95)', border: '1px solid #008f11',
+                                    transition: '0.3s', position: 'relative'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(-5px)';
+                                    e.currentTarget.style.borderColor = '#00ff41';
+                                    e.currentTarget.style.boxShadow = '0 0 15px rgba(0,255,65,0.3)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.transform = 'translateY(0)';
+                                    e.currentTarget.style.borderColor = '#008f11';
+                                    e.currentTarget.style.boxShadow = 'none';
+                                }}
+                                >
                                     
-                                    <div className="p-6">
-                                        <h3 className="text-xl text-gray-800 dark:text-white font-bold mb-3 group-hover:text-pink-600 dark:group-hover:text-[#00ff41] truncate font-mono">
+                                    {/* Ảnh Thumbnail */}
+                                    <div style={{height: '200px', overflow: 'hidden', position: 'relative', borderBottom: '1px solid #008f11'}}>
+                                        <img 
+                                            src={getCover(post.images)} 
+                                            alt={post.title} 
+                                            style={{width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s', filter: 'contrast(1.1)'}} 
+                                        />
+                                        {post.language && (
+                                            <div style={{
+                                                position: 'absolute', top: 0, right: 0, 
+                                                background: 'black', color: '#00ff41', 
+                                                padding: '4px 8px', fontSize: '0.8rem', fontWeight: 'bold',
+                                                borderLeft: '1px solid #00ff41', borderBottom: '1px solid #00ff41'
+                                            }}>
+                                                {post.language.toUpperCase()}
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Nội dung tóm tắt */}
+                                    <div style={{padding: '20px', flex: 1, display: 'flex', flexDirection: 'column'}}>
+                                        <span style={{fontSize: '0.9rem', color: '#008f11', fontWeight: 'bold', textTransform: 'uppercase', marginBottom: '5px'}}>
+                                            //{ALL_TAGS.find(t => t.value === post.tag)?.label || post.tag}
+                                        </span>
+                                        <h3 style={{fontSize: '1.4rem', color: 'white', marginBottom: '10px', lineHeight: '1.2', fontWeight: 'bold'}}>
                                             {post.title}
                                         </h3>
-                                        <div className="flex justify-between text-gray-500 text-xs mb-4 font-sans border-b border-gray-200 dark:border-[#222] pb-3">
-                                            <span>{new Date(post.createdAt).toLocaleDateString()}</span>
-                                            <span className="font-mono">ID: {post.id.substring(0,6)}</span>
-                                        </div>
-                                        <div className="flex items-center justify-end">
-                                            <span className="text-pink-600 dark:text-[#00ff41] text-xs font-bold tracking-widest border border-pink-500 dark:border-[#00ff41] px-2 py-1 group-hover:bg-pink-500 dark:group-hover:bg-[#00ff41] group-hover:text-white dark:group-hover:text-black transition-all">
-                                                ACCESS_DATA &gt;&gt;
+                                        
+                                        <div style={{marginTop: 'auto', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.9rem', color: '#888', borderTop:'1px dashed #333', paddingTop:'15px'}}>
+                                            <span>
+                                                {new Date(post.createdAt).toLocaleDateString()}
+                                            </span>
+                                            <span style={{color: '#00ff41', fontWeight: 'bold'}}>
+                                                &gt;&gt; ACCESS_LOG
                                             </span>
                                         </div>
                                     </div>
-                                </Link>
-                            ))
-                        ) : (
-                            <div className="text-gray-500 col-span-3 text-center py-20 border-2 border-dashed border-gray-300 dark:border-[#333]">NO LOGS FOUND</div>
-                        )}
-                    </div>
-                )}
-            </div>
-        </main>
-    );
+                                </div>
+                            </Link>
+                        ))
+                    ) : (
+                        <div style={{
+                            textAlign: 'center', gridColumn: '1 / -1', padding: '60px', 
+                            background: 'rgba(5,5,5,0.9)', border: '1px dashed #00ff41', color: '#00ff41'
+                        }}>
+                            <div style={{fontSize: '3rem', marginBottom: '10px'}}>🚫</div>
+                            <p style={{fontSize: '1.5rem'}}>NO_DATA_FOUND_IN_ARCHIVE</p>
+                            <button onClick={() => {setSearch(""); setSelectedTag("ALL");}} style={{marginTop: '15px', background: 'none', border: '1px solid #00ff41', padding: '5px 15px', color: '#00ff41', cursor: 'pointer', fontSize: '1.1rem', fontFamily: 'inherit'}}>
+                                [RESET_FILTER]
+                            </button>
+                        </div>
+                    )}
+                </div>
+            )}
+        </div>
+    </main>
+  );
 }
