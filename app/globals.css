@@ -1,24 +1,32 @@
-/* 1. Import Font phải luôn ở dòng đầu tiên */
-@import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+/* 1. Import Font Pixel chuẩn cho mọi ngôn ngữ (En, Vi, Jp) */
+@import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
-/* 2. Cấu hình Tailwind v4 */
+/* 2. Cấu hình Tailwind (Giữ nguyên) */
 @import "tailwindcss";
-
 @plugin "tailwindcss-animate";
 
-@theme {
-  --font-pixel: 'VT323', monospace;
+/* 3. Ép toàn bộ web dùng Font Pixel */
+:root {
+  --font-pixel: 'DotGothic16', sans-serif;
+  
+  /* Các biến màu cũ giữ nguyên */
+  --bg-color: #050505;
+  --text-color: #e0e0e0;
+  --accent-color: #00ff41; 
+  --secondary-color: #008f11;
+  --nav-bg: rgba(10, 10, 10, 0.95);
+  --nav-height: 80px;
 }
 
-/* --- CẤU HÌNH GIAO DIỆN CHUNG --- */
-:root {
-    --bg-color: #050505;
-    --text-color: #e0e0e0;
-    --accent-color: #00ff41; 
-    --secondary-color: #008f11;
-    --nav-bg: rgba(10, 10, 10, 0.95);
-    --pixel-font: var(--font-pixel);
-    --nav-height: 80px;
+/* Áp dụng font cho TẤT CẢ phần tử */
+* {
+  font-family: var(--font-pixel) !important;
+}
+
+/* Tăng kích thước chữ lên một chút vì font pixel thường nhỏ hơn font thường */
+body {
+  font-size: 18px; 
+  line-height: 1.6;
 }
 
 html {
@@ -26,15 +34,8 @@ html {
     scroll-padding-top: calc(var(--nav-height) + 20px);
 }
 
-* { margin: 0; padding: 0; box-sizing: border-box; }
 
-body {
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    font-family: var(--pixel-font);
-    font-size: 20px;
-    padding-top: var(--nav-height);
-}
+
 
 #code-bg {
     position: fixed; top: 0; left: 0; width: 100%; height: 100%;
@@ -156,4 +157,49 @@ nav#navbar {
     background-color: #ff69b4 !important;
     color: white !important;
     box-shadow: 0 0 20px #ff69b4 !important;
+}
+
+/* --- HACKER LOADING ANIMATIONS --- */
+@keyframes cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.cursor-blink {
+  display: inline-block;
+  width: 10px;
+  height: 20px;
+  background-color: var(--accent-color);
+  animation: cursor-blink 1s infinite;
+  vertical-align: middle;
+  margin-left: 5px;
+}
+
+@keyframes glitch-anim {
+  0% { transform: translate(0); }
+  20% { transform: translate(-2px, 2px); }
+  40% { transform: translate(-2px, -2px); }
+  60% { transform: translate(2px, 2px); }
+  80% { transform: translate(2px, -2px); }
+  100% { transform: translate(0); }
+}
+
+.glitch-text {
+  animation: glitch-anim 0.3s infinite;
+  color: var(--accent-color);
+  text-shadow: 2px 2px var(--secondary-color);
+  font-weight: bold;
+}
+
+.scanline {
+  width: 100%;
+  height: 2px;
+  background: rgba(0, 255, 65, 0.3);
+  position: absolute;
+  z-index: 10;
+  animation: scanline 6s linear infinite;
+}
+@keyframes scanline {
+  0% { top: 0%; }
+  100% { top: 100%; }
 }
