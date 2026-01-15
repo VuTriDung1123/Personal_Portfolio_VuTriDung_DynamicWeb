@@ -21,52 +21,20 @@ type HeroData = { fullName: string; nickName1: string; nickName2: string; avatar
 type ConfigData = { resumeUrl: string; isOpenForWork: boolean; };
 type Translation = typeof translations.en;
 
-// --- LOADER COMPONENTS ---
-const SystemMessage = ({ text }: { text: string }) => (
-    <div className="flex items-center gap-2 font-mono text-xs md:text-sm text-[#00ff41] mt-2 opacity-80">
-        <span className="animate-pulse">&gt;&gt;</span>
-        <span>{text}</span>
-        <span className="animate-ping">_</span>
-    </div>
-);
-
-const MatrixTextLoader = ({ message }: { message: string }) => (
-    <div className="space-y-3 animate-pulse border-l-2 border-[#00ff41] pl-4 py-4 bg-[#00ff41]/5 rounded-r my-4">
-        <div className="h-3 bg-[#00ff41]/20 rounded w-3/4"></div>
-        <div className="h-3 bg-[#00ff41]/20 rounded w-full"></div>
-        <div className="h-3 bg-[#00ff41]/20 rounded w-5/6"></div>
-        <SystemMessage text={message} />
-    </div>
-);
-
-const MatrixBoxLoader = ({ message }: { message: string }) => (
-    <div className="w-full">
-        <div className="profile-container mb-2">
-            {[1, 2].map((i) => (
-                <div key={i} className="profile-box animate-pulse border border-[#00ff41]/30 bg-[#00ff41]/5">
-                    <div className="h-5 bg-[#00ff41]/30 w-1/3 mb-4 rounded"></div>
-                    <ul className="space-y-4">
-                        <li className="flex justify-between"><div className="h-3 bg-[#00ff41]/10 w-1/4 rounded"></div><div className="h-3 bg-[#00ff41]/10 w-1/2 rounded"></div></li>
-                        <li className="flex justify-between"><div className="h-3 bg-[#00ff41]/10 w-1/4 rounded"></div><div className="h-3 bg-[#00ff41]/10 w-1/2 rounded"></div></li>
-                    </ul>
-                </div>
-            ))}
-        </div>
-        <div className="flex justify-center"><SystemMessage text={message} /></div>
-    </div>
-);
-
-const HeroLoader = () => (
-    <div className="hero-text w-full animate-pulse">
-        <div className="h-4 bg-[#00ff41]/20 w-32 mb-4 rounded"></div>
-        <div className="h-10 md:h-14 bg-[#00ff41]/20 w-3/4 md:w-1/2 mb-4 rounded"></div>
-        <div className="flex gap-4 mb-6"><div className="h-4 bg-[#00ff41]/10 w-24 rounded"></div><div className="h-4 bg-[#00ff41]/10 w-24 rounded"></div></div>
-        <div className="h-4 bg-[#00ff41]/20 w-40 mb-6 rounded"></div>
-        <div className="border-l-2 border-[#00ff41] pl-4 py-2 bg-[#00ff41]/5 mb-6"><div className="h-3 bg-[#00ff41]/10 w-full mb-2 rounded"></div><div className="h-3 bg-[#00ff41]/10 w-5/6 rounded"></div></div>
-        <div className="flex gap-4"><div className="h-10 w-32 bg-[#00ff41]/20 rounded"></div><div className="h-10 w-32 bg-[#00ff41]/10 rounded border border-[#00ff41]/30"></div></div>
-        <div className="mt-4"><SystemMessage text="INITIALIZING_IDENTITY_MATRIX... FETCHING_USER_DATA..." /></div>
-    </div>
-);
+// --- HACKER LOGS DATA ---
+const SYSTEM_LOGS = [
+    "INITIALIZING_CONNECTION...",
+    "BYPASSING_FIREWALL_LAYER_1...",
+    "BYPASSING_FIREWALL_LAYER_2...",
+    "INJECTING_PAYLOAD...",
+    "DECRYPTING_USER_DATA...",
+    "ACCESSING_MAINFRAME...",
+    "FETCHING_PROJECT_REPOSITORIES...",
+    "ESTABLISHING_SECURE_TUNNEL...",
+    "SYSTEM_BREACH_DETECTED...",
+    "IGNORING_WARNINGS...",
+    "ROOT_ACCESS_GRANTED."
+];
 
 // --- NO DATA COMPONENT ---
 const NoDataDisplay = ({ section }: { section: string }) => (
@@ -82,7 +50,11 @@ const NoDataDisplay = ({ section }: { section: string }) => (
 
 export default function Home() {
   const [currentLang, setCurrentLang] = useState<Lang>("en");
+  
+  // Loading States
   const [isLoading, setIsLoading] = useState(true);
+  const [logs, setLogs] = useState<string[]>([]);
+  const [showAccessGranted, setShowAccessGranted] = useState(false);
 
   // Data States
   const [dbUniProjects, setDbUniProjects] = useState<Post[]>([]);
@@ -97,15 +69,20 @@ export default function Home() {
   const [dynamicSections, setDynamicSections] = useState<Record<string, SectionData>>({});
   const [globalConfig, setGlobalConfig] = useState<ConfigData | null>(null);
 
-  // --- [MỚI] STATE BỘ LỌC DỰ ÁN ---
+  // --- FILTER STATES ---
   const [projLang, setProjLang] = useState<string>("ALL");
   const [projSort, setProjSort] = useState<"newest" | "oldest">("newest");
 
   const typeWriterRef = useRef<HTMLSpanElement>(null);
   const t: Translation = translations[currentLang]; 
+  const logsContainerRef = useRef<HTMLDivElement>(null);
 
+  // --- EFFECTS ---
   useEffect(() => {
-    // 1. Fetch Blogs
+    // 1. Fetch Data
+    const savedLang = localStorage.getItem("sakura_lang") as Lang;
+    if (savedLang && ['en', 'vi', 'jp'].includes(savedLang)) setCurrentLang(savedLang);
+
     getPostsByTag("uni_projects").then(data => setDbUniProjects(data as unknown as Post[]));
     getPostsByTag("personal_projects").then(data => setDbPersonalProjects(data as unknown as Post[]));
     getPostsByTag("it_events").then(data => setDbItEvents(data as unknown as Post[]));
@@ -114,7 +91,6 @@ export default function Home() {
     getPostsByTag("achievements").then(data => setDbAchievements(data as unknown as Post[]));
     getAllPosts().then((posts) => { if (posts && posts.length > 0) setLatestPosts(posts.slice(0, 3) as unknown as Post[]); });
 
-    // 2. Fetch Sections
     Promise.all([
         getSectionContent("about"), getSectionContent("career"), getSectionContent("skills"),
         getSectionContent("profile"), getSectionContent("experience"), getSectionContent("contact"),
@@ -129,12 +105,27 @@ export default function Home() {
         if (contact) sections.contact = contact as unknown as SectionData;
         if (hero) sections.hero = hero as unknown as SectionData; 
         setDynamicSections(sections);
-
         if (config) { try { setGlobalConfig(JSON.parse((config as unknown as SectionData).contentEn)); } catch { console.log("Config error"); } }
-    })
-    .finally(() => {
-        setTimeout(() => setIsLoading(false), 1500);
     });
+
+    // 2. Hacker Loading Logic
+    let logIndex = 0;
+    const interval = setInterval(() => {
+        if (logIndex < SYSTEM_LOGS.length) {
+            setLogs(prev => [...prev, SYSTEM_LOGS[logIndex]]);
+            logIndex++;
+            // Auto scroll to bottom
+            if (logsContainerRef.current) {
+                logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+            }
+        } else {
+            clearInterval(interval);
+            setShowAccessGranted(true);
+            setTimeout(() => setIsLoading(false), 1500); // Wait 1.5s after Access Granted
+        }
+    }, 250); // Speed of logs
+
+    return () => clearInterval(interval);
   }, []);
 
   // Helpers
@@ -165,6 +156,7 @@ export default function Home() {
 
   const hero = getCurrentHero();
 
+  // Typewriter effect for Hero
   useEffect(() => {
     let phraseIndex = 0; let charIndex = 0; let isDeleting = false; let timeoutId: NodeJS.Timeout;
     let phrases = t.typewriter_texts; 
@@ -196,14 +188,12 @@ export default function Home() {
   const careerText = getSectionText("career");
   const skillsText = getSectionText("skills");
 
-  // --- [MỚI] HÀM LỌC & SẮP XẾP CHO HACKER THEME ---
+  // --- FILTER FUNCTION ---
   const filterProjects = (projects: Post[]) => {
       let res = [...projects];
-      // 1. Lọc ngôn ngữ
       if (projLang !== "ALL") {
           res = res.filter(p => p.language?.toLowerCase() === projLang.toLowerCase());
       }
-      // 2. Sắp xếp thời gian
       res.sort((a, b) => {
           const tA = new Date(a.createdAt).getTime();
           const tB = new Date(b.createdAt).getTime();
@@ -217,9 +207,49 @@ export default function Home() {
         <MatrixRain />
         <TopNav t={t} currentLang={currentLang} setCurrentLang={setCurrentLang} resumeUrl={globalConfig?.resumeUrl} />
 
-        <section id="home" className="hero">
-            {isLoading ? <HeroLoader /> : (
-                <>
+        {/* --- HACKER LOADING SCREEN --- */}
+        {isLoading ? (
+            <div style={{
+                position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
+                backgroundColor: '#050505', zIndex: 9999,
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center',
+                fontFamily: "'VT323', monospace", padding: '20px'
+            }}>
+                <div className="scanline"></div>
+                <div style={{width: '100%', maxWidth: '600px', border: '1px solid #00ff41', padding: '20px', backgroundColor: 'rgba(0, 20, 0, 0.9)', boxShadow: '0 0 20px rgba(0, 255, 65, 0.2)'}}>
+                    
+                    {/* Header Terminal */}
+                    <div style={{borderBottom: '1px solid #00ff41', marginBottom: '10px', paddingBottom: '5px', display: 'flex', justifyContent: 'space-between', color: '#00ff41', fontSize: '18px'}}>
+                        <span>root@system:~# ./init_portfolio.sh</span>
+                        <span>v2.0.26</span>
+                    </div>
+
+                    {/* Logs Container */}
+                    <div ref={logsContainerRef} style={{height: '300px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '5px', color: '#00ff41', fontSize: '20px'}}>
+                        {logs.map((log, index) => (
+                            <div key={index} style={{opacity: 0.8}}>
+                                <span style={{color: '#008f11', marginRight: '10px'}}>[{new Date().toLocaleTimeString()}]</span>
+                                {`> ${log}`}
+                            </div>
+                        ))}
+                        {!showAccessGranted && <div style={{color: '#00ff41'}}>&gt; <span className="cursor-blink"></span></div>}
+                    </div>
+
+                    {/* Access Granted Flash */}
+                    {showAccessGranted && (
+                        <div style={{
+                            marginTop: '20px', borderTop: '1px dashed #00ff41', paddingTop: '15px', 
+                            textAlign: 'center', fontSize: '40px', fontWeight: 'bold', 
+                            color: '#00ff41', textShadow: '0 0 10px #00ff41'
+                        }} className="glitch-text">
+                            ACCESS GRANTED
+                        </div>
+                    )}
+                </div>
+            </div>
+        ) : (
+            <>
+                <section id="home" className="hero">
                     <div className="hero-text">
                         <h3>{hero.greeting}</h3>
                         <h1><span className="highlight">{hero.fullName}</span></h1>
@@ -245,226 +275,131 @@ export default function Home() {
                     <div className="hero-img-large">
                         <Image src={hero.avatarUrl || "/pictures/VuTriDung.jpg"} alt={hero.fullName} width={350} height={350} className="object-cover border-4 border-[#00ff41] shadow-[0_0_20px_#00ff41]" />
                     </div>
-                </>
-            )}
-        </section>
+                </section>
 
-        {/* 01. ABOUT */}
-        <section id="about" className="content-section">
-            <h2>{t.sec_about}</h2>
-            {isLoading ? <MatrixTextLoader message="DECRYPTING_BIO_DATA..." /> : (
-                aboutText ? <p style={{whiteSpace: 'pre-line'}}>{aboutText}</p> : <NoDataDisplay section="ABOUT ME" />
-            )}
-        </section>
-        
-        {/* 02. PROFILE */}
-        <section id="profile" className="content-section">
-            <h2>{t.sec_profile}</h2>
-            {isLoading ? <MatrixBoxLoader message="FETCHING_PERSONAL_RECORDS..." /> : (
-                profileBoxes && profileBoxes.length > 0 ? (
-                    <div className="profile-container">{profileBoxes.map((box) => (<div key={box.id} className="profile-box"><h3>{box.title}</h3><ul className="profile-list">{box.items.map((item, idx) => (<li key={idx}><span className="label">{item.label}</span><span className="value">{item.value}</span></li>))}</ul></div>))}</div>
-                ) : <NoDataDisplay section="PROFILE" />
-            )}
-        </section>
-
-        {/* 03. CERTIFICATES */}
-        <section id="certificates" className="content-section"><h2>{t.sec_cert}</h2><h3 className="carousel-title">{t.cat_lang}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button><div className="carousel-container" id="lang-certs">{dbLangCerts.length > 0 ? (dbLangCerts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO CERTIFICATES</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('lang-certs', 1)}>&#10095;</button></div><h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_tech}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button><div className="carousel-container" id="tech-certs">{dbTechCerts.length > 0 ? (dbTechCerts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO CERTIFICATES</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('tech-certs', 1)}>&#10095;</button></div></section>
-
-        {/* 04. CAREER */}
-        <section id="career" className="content-section">
-            <h2>{t.sec_career}</h2>
-            {isLoading ? <MatrixTextLoader message="ANALYZING_CAREER_PATHWAY..." /> : (
-                careerText ? <p style={{whiteSpace: 'pre-line'}}>{careerText}</p> : <NoDataDisplay section="CAREER GOALS" />
-            )}
-        </section>
-        
-        {/* 05. ACHIEVEMENTS */}
-        <section id="achievements" className="content-section"><h2>{t.sec_achievements}</h2><p style={{marginBottom: '20px', color: '#bbb'}}>{t.achievements_desc}</p><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('achievements-list', -1)}>&#10094;</button><div className="carousel-container" id="achievements-list">{dbAchievements.length > 0 ? (dbAchievements.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ITEM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO ACHIEVEMENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('achievements-list', 1)}>&#10095;</button></div></section>
-
-        {/* 06. SKILLS */}
-        <section id="skills" className="content-section">
-            <h2>{t.sec_skills}</h2>
-            {isLoading ? <MatrixTextLoader message="LOADING_SKILL_MATRIX..." /> : (
-                skillsText ? <p style={{whiteSpace: 'pre-line'}}>{skillsText}</p> : <NoDataDisplay section="SKILLS" />
-            )}
-        </section>
-
-        {/* 07. EXPERIENCE */}
-        <section id="experience" className="content-section">
-            <h2>{t.sec_exp}</h2>
-            {isLoading ? <MatrixBoxLoader message="RETRIEVING_WORK_HISTORY..." /> : (
-                experienceBoxes && experienceBoxes.length > 0 ? (
-                    <div className="profile-container">{experienceBoxes.map((box) => (<div key={box.id} className="profile-box"><h3>{box.title}</h3><ul className="profile-list">{box.items.map((item, idx) => (<li key={idx}><span className="label">{item.label}</span><span className="value">{item.value}</span></li>))}</ul></div>))}</div>
-                ) : <NoDataDisplay section="EXPERIENCE" />
-            )}
-        </section>
-
-        {/* 08. PROJECTS (NÂNG CẤP BỘ LỌC HACKER STYLE) */}
-        <section id="projects" className="content-section">
-            <h2>{t.sec_proj}</h2>
-
-            {/* --- PANEL BỘ LỌC (HACKER UI) --- */}
-            <div className="mb-8 border border-[#00ff41] p-4 bg-[#050505] flex flex-wrap gap-4 justify-between items-center shadow-[0_0_10px_rgba(0,255,65,0.2)]">
-                <div className="flex gap-4 items-center flex-wrap">
-                    <span className="text-[#00ff41] font-bold text-sm tracking-widest">&gt; FILTER_LANG:</span>
-                    {[
-                        {v: "ALL", l: "ALL"},
-                        {v: "vi", l: "VI"},
-                        {v: "en", l: "EN"},
-                        {v: "jp", l: "JP"}
-                    ].map(opt => (
-                        <button 
-                            key={opt.v}
-                            onClick={() => setProjLang(opt.v)}
-                            className={`px-3 py-1 font-mono text-sm border border-[#00ff41] transition-all hover:shadow-[0_0_5px_#00ff41]
-                                ${projLang === opt.v ? 'bg-[#00ff41] text-black font-bold' : 'bg-transparent text-[#00ff41]'}`}
-                        >
-                            [{opt.l}]
-                        </button>
-                    ))}
-                </div>
+                {/* 01. ABOUT */}
+                <section id="about" className="content-section">
+                    <h2>{t.sec_about}</h2>
+                    {aboutText ? <p style={{whiteSpace: 'pre-line'}}>{aboutText}</p> : <NoDataDisplay section="ABOUT ME" />}
+                </section>
                 
-                <button 
-                    onClick={() => setProjSort(prev => prev === "newest" ? "oldest" : "newest")}
-                    className="flex items-center gap-2 text-[#00ff41] hover:text-white transition-colors text-sm font-mono border-b border-transparent hover:border-[#00ff41]"
-                >
-                    <span>{projSort === "newest" ? "▼" : "▲"}</span>
-                    <span>SORT: {projSort === "newest" ? "LATEST" : "OLDEST"}</span>
-                </button>
-            </div>
+                {/* 02. PROFILE */}
+                <section id="profile" className="content-section">
+                    <h2>{t.sec_profile}</h2>
+                    {profileBoxes && profileBoxes.length > 0 ? (
+                        <div className="profile-container">{profileBoxes.map((box) => (<div key={box.id} className="profile-box"><h3>{box.title}</h3><ul className="profile-list">{box.items.map((item, idx) => (<li key={idx}><span className="label">{item.label}</span><span className="value">{item.value}</span></li>))}</ul></div>))}</div>
+                    ) : <NoDataDisplay section="PROFILE" />}
+                </section>
 
-            {/* HIỂN THỊ DANH SÁCH ĐÃ LỌC */}
-            {[
-                { title: t.cat_uni_proj, data: dbUniProjects, id: 'uni-projects' },
-                { title: t.cat_personal_proj, data: dbPersonalProjects, id: 'personal-projects' }
-            ].map((cat, idx) => {
-                const filtered = filterProjects(cat.data);
+                {/* 03. CERTIFICATES */}
+                <section id="certificates" className="content-section"><h2>{t.sec_cert}</h2><h3 className="carousel-title">{t.cat_lang}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('lang-certs', -1)}>&#10094;</button><div className="carousel-container" id="lang-certs">{dbLangCerts.length > 0 ? (dbLangCerts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO CERTIFICATES</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('lang-certs', 1)}>&#10095;</button></div><h3 className="carousel-title" style={{marginTop: 40}}>{t.cat_tech}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('tech-certs', -1)}>&#10094;</button><div className="carousel-container" id="tech-certs">{dbTechCerts.length > 0 ? (dbTechCerts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW CERT</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO CERTIFICATES</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('tech-certs', 1)}>&#10095;</button></div></section>
 
-                return (
-                    <div key={idx}>
-                        <h3 className="carousel-title">
-                            {cat.title} <span className="text-sm opacity-60">({filtered.length})</span>
-                        </h3>
-                        <div className="carousel-wrapper">
-                            <button className="nav-btn prev-btn" onClick={() => scrollCarousel(cat.id, -1)} >&#10094;</button>
-                            <div className="carousel-container" id={cat.id}>
-                                {filtered.length > 0 ? (filtered.map((post) => (
-                                    <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
-                                        <div className="relative h-[160px] w-full overflow-hidden border-b border-[#00ff41]">
-                                            <img src={getCoverImage(post.images)} alt={post.title} style={{height: '100%', width: '100%', objectFit: 'cover'}} />
-                                            {/* Nhãn ngôn ngữ trên ảnh (Style Hacker) */}
-                                            {post.language && (
-                                                <div className="absolute top-0 right-0 bg-black border-l border-b border-[#00ff41] px-2 py-1 text-[10px] text-[#00ff41] font-mono font-bold">
-                                                    {post.language.toUpperCase()}
-                                                </div>
-                                            )}
-                                        </div>
-                                        <div className="card-info">
-                                            <h4>{post.title}</h4>
-                                            <div className="flex justify-between items-center mt-1">
-                                                <span className="text-gray-500 text-[10px] font-mono">{new Date(post.createdAt).toLocaleDateString()}</span>
-                                                <p className="text-[#00ff41] text-xs">&gt;&gt; READ LOG</p>
-                                            </div>
-                                        </div>
-                                    </Link>
-                                ))) : (
-                                    <div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">
-                                        NO DATA MATCHING FILTER [{projLang}]
-                                    </div>
-                                )}
-                            </div>
-                            <button className="nav-btn next-btn" onClick={() => scrollCarousel(cat.id, 1)} >&#10095;</button>
+                {/* 04. CAREER */}
+                <section id="career" className="content-section">
+                    <h2>{t.sec_career}</h2>
+                    {careerText ? <p style={{whiteSpace: 'pre-line'}}>{careerText}</p> : <NoDataDisplay section="CAREER GOALS" />}
+                </section>
+                
+                {/* 05. ACHIEVEMENTS */}
+                <section id="achievements" className="content-section"><h2>{t.sec_achievements}</h2><p style={{marginBottom: '20px', color: '#bbb'}}>{t.achievements_desc}</p><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('achievements-list', -1)}>&#10094;</button><div className="carousel-container" id="achievements-list">{dbAchievements.length > 0 ? (dbAchievements.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ITEM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO ACHIEVEMENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('achievements-list', 1)}>&#10095;</button></div></section>
+
+                {/* 06. SKILLS */}
+                <section id="skills" className="content-section">
+                    <h2>{t.sec_skills}</h2>
+                    {skillsText ? <p style={{whiteSpace: 'pre-line'}}>{skillsText}</p> : <NoDataDisplay section="SKILLS" />}
+                </section>
+
+                {/* 07. EXPERIENCE */}
+                <section id="experience" className="content-section">
+                    <h2>{t.sec_exp}</h2>
+                    {experienceBoxes && experienceBoxes.length > 0 ? (
+                        <div className="profile-container">{experienceBoxes.map((box) => (<div key={box.id} className="profile-box"><h3>{box.title}</h3><ul className="profile-list">{box.items.map((item, idx) => (<li key={idx}><span className="label">{item.label}</span><span className="value">{item.value}</span></li>))}</ul></div>))}</div>
+                    ) : <NoDataDisplay section="EXPERIENCE" />}
+                </section>
+
+                {/* 08. PROJECTS */}
+                <section id="projects" className="content-section">
+                    <h2>{t.sec_proj}</h2>
+
+                    {/* FILTER PANEL */}
+                    <div className="mb-8 border border-[#00ff41] p-4 bg-[#050505] flex flex-wrap gap-4 justify-between items-center shadow-[0_0_10px_rgba(0,255,65,0.2)]">
+                        <div className="flex gap-4 items-center flex-wrap">
+                            <span className="text-[#00ff41] font-bold text-sm tracking-widest">&gt; FILTER_LANG:</span>
+                            {[{v: "ALL", l: "ALL"}, {v: "vi", l: "VI"}, {v: "en", l: "EN"}, {v: "jp", l: "JP"}].map(opt => (
+                                <button key={opt.v} onClick={() => setProjLang(opt.v)} className={`px-3 py-1 font-mono text-sm border border-[#00ff41] transition-all hover:shadow-[0_0_5px_#00ff41] ${projLang === opt.v ? 'bg-[#00ff41] text-black font-bold' : 'bg-transparent text-[#00ff41]'}`}>[{opt.l}]</button>
+                            ))}
                         </div>
+                        <button onClick={() => setProjSort(prev => prev === "newest" ? "oldest" : "newest")} className="flex items-center gap-2 text-[#00ff41] hover:text-white transition-colors text-sm font-mono border-b border-transparent hover:border-[#00ff41]">
+                            <span>{projSort === "newest" ? "▼" : "▲"}</span>
+                            <span>SORT: {projSort === "newest" ? "LATEST" : "OLDEST"}</span>
+                        </button>
                     </div>
-                );
-            })}
-        </section>
 
-        {/* 09. BLOG */}
-        <section id="blog" className="content-section"><div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}><h2>09. {t.nav_blog}</h2><Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>{`View All >>>`}</Link></div><div className="carousel-wrapper"><div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>{latestPosts.length > 0 ? (latestPosts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p style={{fontSize: '0.9rem', color: '#aaa', margin: '5px 0'}}>{new Date(post.createdAt).toLocaleDateString()}</p><p className="text-[#00ff41] text-xs">&gt;&gt; ACCESS LOG</p></div></Link>))) : (<div style={{color: '#888', fontStyle: 'italic', padding: '20px'}}>[SYSTEM: NO LOGS FOUND]</div>)}</div></div></section>
-
-        {/* 10. GALLERY */}
-        <section id="gallery" className="content-section"><h2>10. GALLERY</h2> <h3 className="carousel-title">{t.cat_it_event}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button><div className="carousel-container" id="it-gallery">{dbItEvents.length > 0 ? (dbItEvents.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO EVENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button></div></section>
-        
-        {/* 11. CONTACT (HACKER STYLE - SMART LINKS) */}
-        <section id="contact" className="content-section" style={{marginBottom: 100}}>
-            <h2>11. CONTACT</h2>
-            
-            {/* Header Text */}
-            <div className="text-center mb-10">
-                <p className="font-mono text-[#00ff41] text-sm md:text-base animate-pulse">
-                    {currentLang === 'vi' ? '>> THIẾT LẬP KẾT NỐI AN TOÀN...' : (currentLang === 'jp' ? '>> 安全な接続を確立中...' : '>> ESTABLISHING_SECURE_CONNECTION...')}
-                </p>
-                <p className="text-gray-500 text-xs mt-2">
-                    {currentLang === 'vi' ? '[ Hãy cùng tạo ra những điều tuyệt vời! ]' : (currentLang === 'jp' ? '[ 一緒に素晴らしいものを作りましょう！ ]' : '[ Let\'s create something beautiful together! ]')}
-                </p>
-            </div>
-
-            {isLoading ? <MatrixBoxLoader message="DECRYPTING_CONTACT_PROTOCOLS..." /> : (
-                contactBoxes && contactBoxes.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                        {contactBoxes.map((box) => (
-                            <div key={box.id} className="border border-[#00ff41] bg-[#050505] p-6 relative group hover:shadow-[0_0_15px_rgba(0,255,65,0.2)] transition-all duration-300">
-                                {/* Trang trí góc */}
-                                <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[#00ff41]"></div>
-                                <div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-[#00ff41]"></div>
-
-                                {/* Tiêu đề Box */}
-                                <h3 className="text-xl font-bold text-[#00ff41] border-b border-[#00ff41] pb-2 mb-4 uppercase tracking-widest flex items-center gap-2">
-                                    <span className="text-xs opacity-50">0x{box.id.substring(0,2)}</span> {box.title}
-                                </h3>
-
-                                {/* Danh sách Items */}
-                                <div className="flex flex-col gap-4 font-mono text-sm">
-                                    {box.items.map((item, idx) => {
-                                        // XỬ LÝ LINK THÔNG MINH (HACKER STYLE)
-                                        let content;
-                                        const val = item.value;
-
-                                        if (val.includes('@')) {
-                                            // 1. Email
-                                            content = (
-                                                <a href={`mailto:${val}`} className="text-[#00ff41] hover:bg-[#00ff41] hover:text-black transition-colors px-1 inline-block break-all">
-                                                    <span className="opacity-50 mr-1">[MAIL]:</span>{val}
-                                                </a>
-                                            );
-                                        } else if (val.startsWith('http')) {
-                                            // 2. Link Web
-                                            content = (
-                                                <a href={val} target="_blank" rel="noopener noreferrer" className="text-[#00ff41] hover:underline decoration-dashed break-all">
-                                                    <span className="opacity-50 mr-1">[LINK]:</span>{val} ↗
-                                                </a>
-                                            );
-                                        } else if (val.match(/^[0-9+ ]+$/) && val.length > 8) {
-                                            // 3. Số điện thoại
-                                            content = (
-                                                <a href={`tel:${val.replace(/\s/g, '')}`} className="text-[#00ff41] font-bold hover:bg-[#00ff41] hover:text-black px-1 transition-colors">
-                                                    <span className="opacity-50 mr-1">[CALL]:</span>{val}
-                                                </a>
-                                            );
-                                        } else {
-                                            // 4. Text thường
-                                            content = <span className="text-gray-300"><span className="text-[#00ff41] opacity-50 mr-1">&gt;</span>{val}</span>;
-                                        }
-
-                                        return (
-                                            <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-[#00ff41]/20 pb-2 last:border-0">
-                                                <span className="text-gray-500 font-bold text-xs uppercase mb-1 sm:mb-0 min-w-[100px]">
-                                                    {item.label}_
-                                                </span>
-                                                <div className="text-right">
-                                                    {content}
+                    {[ { title: t.cat_uni_proj, data: dbUniProjects, id: 'uni-projects' }, { title: t.cat_personal_proj, data: dbPersonalProjects, id: 'personal-projects' } ].map((cat, idx) => {
+                        const filtered = filterProjects(cat.data);
+                        return (
+                            <div key={idx}>
+                                <h3 className="carousel-title">{cat.title} <span className="text-sm opacity-60">({filtered.length})</span></h3>
+                                <div className="carousel-wrapper">
+                                    <button className="nav-btn prev-btn" onClick={() => scrollCarousel(cat.id, -1)} >&#10094;</button>
+                                    <div className="carousel-container" id={cat.id}>
+                                        {filtered.length > 0 ? (filtered.map((post) => (
+                                            <Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none">
+                                                <div className="relative h-[160px] w-full overflow-hidden border-b border-[#00ff41]">
+                                                    <img src={getCoverImage(post.images)} alt={post.title} style={{height: '100%', width: '100%', objectFit: 'cover'}} />
+                                                    {post.language && <div className="absolute top-0 right-0 bg-black border-l border-b border-[#00ff41] px-2 py-1 text-[10px] text-[#00ff41] font-mono font-bold">{post.language.toUpperCase()}</div>}
                                                 </div>
-                                            </div>
-                                        );
-                                    })}
+                                                <div className="card-info">
+                                                    <h4>{post.title}</h4>
+                                                    <div className="flex justify-between items-center mt-1"><span className="text-gray-500 text-[10px] font-mono">{new Date(post.createdAt).toLocaleDateString()}</span><p className="text-[#00ff41] text-xs">&gt;&gt; READ LOG</p></div>
+                                                </div>
+                                            </Link>
+                                        ))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO DATA MATCHING FILTER [{projLang}]</div>)}
+                                    </div>
+                                    <button className="nav-btn next-btn" onClick={() => scrollCarousel(cat.id, 1)} >&#10095;</button>
                                 </div>
                             </div>
-                        ))}
+                        );
+                    })}
+                </section>
+
+                {/* 09. BLOG */}
+                <section id="blog" className="content-section"><div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '20px'}}><h2>09. {t.nav_blog}</h2><Link href="/blog" className="value link-hover" style={{fontSize: '1.2rem'}}>{`View All >>>`}</Link></div><div className="carousel-wrapper"><div className="carousel-container" style={{display: 'flex', gap: '20px', overflowX: 'auto', paddingBottom: '20px'}}>{latestPosts.length > 0 ? (latestPosts.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none" style={{minWidth: '300px'}}><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p style={{fontSize: '0.9rem', color: '#aaa', margin: '5px 0'}}>{new Date(post.createdAt).toLocaleDateString()}</p><p className="text-[#00ff41] text-xs">&gt;&gt; ACCESS LOG</p></div></Link>))) : (<div style={{color: '#888', fontStyle: 'italic', padding: '20px'}}>[SYSTEM: NO LOGS FOUND]</div>)}</div></div></section>
+
+                {/* 10. GALLERY */}
+                <section id="gallery" className="content-section"><h2>10. GALLERY</h2> <h3 className="carousel-title">{t.cat_it_event}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button><div className="carousel-container" id="it-gallery">{dbItEvents.length > 0 ? (dbItEvents.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO EVENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button></div></section>
+                
+                {/* 11. CONTACT (HACKER STYLE) */}
+                <section id="contact" className="content-section" style={{marginBottom: 100}}>
+                    <h2>11. CONTACT</h2>
+                    <div className="text-center mb-10">
+                        <p className="font-mono text-[#00ff41] text-sm md:text-base animate-pulse">{currentLang === 'vi' ? '>> THIẾT LẬP KẾT NỐI AN TOÀN...' : (currentLang === 'jp' ? '>> 安全な接続を確立中...' : '>> ESTABLISHING_SECURE_CONNECTION...')}</p>
+                        <p className="text-gray-500 text-xs mt-2">{currentLang === 'vi' ? '[ Hãy cùng tạo ra những điều tuyệt vời! ]' : (currentLang === 'jp' ? '[ 一緒に素晴らしいものを作りましょう！ ]' : '[ Let\'s create something beautiful together! ]')}</p>
                     </div>
-                ) : <NoDataDisplay section="CONTACT" />
-            )}
-        </section>
+                    {contactBoxes && contactBoxes.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
+                            {contactBoxes.map((box) => (
+                                <div key={box.id} className="border border-[#00ff41] bg-[#050505] p-6 relative group hover:shadow-[0_0_15px_rgba(0,255,65,0.2)] transition-all duration-300">
+                                    <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[#00ff41]"></div><div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-[#00ff41]"></div>
+                                    <h3 className="text-xl font-bold text-[#00ff41] border-b border-[#00ff41] pb-2 mb-4 uppercase tracking-widest flex items-center gap-2"><span className="text-xs opacity-50">0x{box.id.substring(0,2)}</span> {box.title}</h3>
+                                    <div className="flex flex-col gap-4 font-mono text-sm">
+                                        {box.items.map((item, idx) => {
+                                            const val = item.value;
+                                            let content;
+                                            if (val.includes('@')) content = <a href={`mailto:${val}`} className="text-[#00ff41] hover:bg-[#00ff41] hover:text-black transition-colors px-1 inline-block break-all"><span className="opacity-50 mr-1">[MAIL]:</span>{val}</a>;
+                                            else if (val.startsWith('http')) content = <a href={val} target="_blank" rel="noopener noreferrer" className="text-[#00ff41] hover:underline decoration-dashed break-all"><span className="opacity-50 mr-1">[LINK]:</span>{val} ↗</a>;
+                                            else if (val.match(/^[0-9+ ]+$/) && val.length > 8) content = <a href={`tel:${val.replace(/\s/g, '')}`} className="text-[#00ff41] font-bold hover:bg-[#00ff41] hover:text-black px-1 transition-colors"><span className="opacity-50 mr-1">[CALL]:</span>{val}</a>;
+                                            else content = <span className="text-gray-300"><span className="text-[#00ff41] opacity-50 mr-1">&gt;</span>{val}</span>;
+                                            return <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-[#00ff41]/20 pb-2 last:border-0"><span className="text-gray-500 font-bold text-xs uppercase mb-1 sm:mb-0 min-w-[100px]">{item.label}_</span><div className="text-right">{content}</div></div>;
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : <NoDataDisplay section="CONTACT" />}
+                </section>
+            </>
+        )}
     </main>
   );
 }
