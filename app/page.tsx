@@ -369,34 +369,84 @@ export default function Home() {
                 {/* 10. GALLERY */}
                 <section id="gallery" className="content-section"><h2>10. GALLERY</h2> <h3 className="carousel-title">{t.cat_it_event}</h3><div className="carousel-wrapper"><button className="nav-btn prev-btn" onClick={() => scrollCarousel('it-gallery', -1)} >&#10094;</button><div className="carousel-container" id="it-gallery">{dbItEvents.length > 0 ? (dbItEvents.map((post) => (<Link key={post.id} href={`/blog/${post.id}`} className="card block text-decoration-none"><img src={getCoverImage(post.images)} alt={post.title} style={{height: 160, width: '100%', objectFit: 'cover'}} /><div className="card-info"><h4>{post.title}</h4><p className="text-[#00ff41] text-xs mt-1">&gt;&gt; VIEW ALBUM</p></div></Link>))) : (<div className="text-gray-500 italic p-5 border border-dashed border-[#333] w-full text-center">NO EVENTS</div>)}</div><button className="nav-btn next-btn" onClick={() => scrollCarousel('it-gallery', 1)} >&#10095;</button></div></section>
                 
-                {/* 11. CONTACT (HACKER STYLE) */}
+                {/* 11. CONTACT (HACKER STYLE - BIGGER BOX) */}
                 <section id="contact" className="content-section" style={{marginBottom: 100}}>
                     <h2>11. CONTACT</h2>
+                    
+                    {/* Header Text */}
                     <div className="text-center mb-10">
-                        <p className="font-mono text-[#00ff41] text-sm md:text-base animate-pulse">{currentLang === 'vi' ? '>> THIẾT LẬP KẾT NỐI AN TOÀN...' : (currentLang === 'jp' ? '>> 安全な接続を確立中...' : '>> ESTABLISHING_SECURE_CONNECTION...')}</p>
-                        <p className="text-gray-500 text-xs mt-2">{currentLang === 'vi' ? '[ Hãy cùng tạo ra những điều tuyệt vời! ]' : (currentLang === 'jp' ? '[ 一緒に素晴らしいものを作りましょう！ ]' : '[ Let\'s create something beautiful together! ]')}</p>
+                        <p className="font-mono text-[#00ff41] text-sm md:text-base animate-pulse">
+                            {currentLang === 'vi' ? '>> THIẾT LẬP KẾT NỐI AN TOÀN...' : (currentLang === 'jp' ? '>> 安全な接続を確立中...' : '>> ESTABLISHING_SECURE_CONNECTION...')}
+                        </p>
+                        <p className="text-gray-500 text-xs mt-2">
+                            {currentLang === 'vi' ? '[ Hãy cùng tạo ra những điều tuyệt vời! ]' : (currentLang === 'jp' ? '[ 一緒に素晴らしいものを作りましょう！ ]' : '[ Let\'s create something beautiful together! ]')}
+                        </p>
                     </div>
-                    {contactBoxes && contactBoxes.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 max-w-5xl mx-auto">
-                            {contactBoxes.map((box) => (
-                                <div key={box.id} className="border border-[#00ff41] bg-[#050505] p-6 relative group hover:shadow-[0_0_15px_rgba(0,255,65,0.2)] transition-all duration-300">
-                                    <div className="absolute top-0 right-0 w-3 h-3 border-t border-r border-[#00ff41]"></div><div className="absolute bottom-0 left-0 w-3 h-3 border-b border-l border-[#00ff41]"></div>
-                                    <h3 className="text-xl font-bold text-[#00ff41] border-b border-[#00ff41] pb-2 mb-4 uppercase tracking-widest flex items-center gap-2"><span className="text-xs opacity-50">0x{box.id.substring(0,2)}</span> {box.title}</h3>
-                                    <div className="flex flex-col gap-4 font-mono text-sm">
-                                        {box.items.map((item, idx) => {
-                                            const val = item.value;
-                                            let content;
-                                            if (val.includes('@')) content = <a href={`mailto:${val}`} className="text-[#00ff41] hover:bg-[#00ff41] hover:text-black transition-colors px-1 inline-block break-all"><span className="opacity-50 mr-1">[MAIL]:</span>{val}</a>;
-                                            else if (val.startsWith('http')) content = <a href={val} target="_blank" rel="noopener noreferrer" className="text-[#00ff41] hover:underline decoration-dashed break-all"><span className="opacity-50 mr-1">[LINK]:</span>{val} ↗</a>;
-                                            else if (val.match(/^[0-9+ ]+$/) && val.length > 8) content = <a href={`tel:${val.replace(/\s/g, '')}`} className="text-[#00ff41] font-bold hover:bg-[#00ff41] hover:text-black px-1 transition-colors"><span className="opacity-50 mr-1">[CALL]:</span>{val}</a>;
-                                            else content = <span className="text-gray-300"><span className="text-[#00ff41] opacity-50 mr-1">&gt;</span>{val}</span>;
-                                            return <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-[#00ff41]/20 pb-2 last:border-0"><span className="text-gray-500 font-bold text-xs uppercase mb-1 sm:mb-0 min-w-[100px]">{item.label}_</span><div className="text-right">{content}</div></div>;
-                                        })}
+
+                    {isLoading ? <MatrixBoxLoader message="DECRYPTING_CONTACT_PROTOCOLS..." /> : (
+                        contactBoxes && contactBoxes.length > 0 ? (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-10 max-w-6xl mx-auto">
+                                {contactBoxes.map((box) => (
+                                    <div key={box.id} className="border border-[#00ff41] bg-[#050505] p-10 relative group hover:shadow-[0_0_20px_rgba(0,255,65,0.3)] transition-all duration-300">
+                                        {/* Trang trí góc */}
+                                        <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-[#00ff41]"></div>
+                                        <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-[#00ff41]"></div>
+
+                                        {/* Tiêu đề Box - TO HƠN */}
+                                        <h3 className="text-2xl font-bold text-[#00ff41] border-b border-[#00ff41] pb-4 mb-6 uppercase tracking-widest flex items-center gap-3">
+                                            <span className="text-sm opacity-50">0x{box.id.substring(0,2)}</span> {box.title}
+                                        </h3>
+
+                                        {/* Danh sách Items - TO HƠN */}
+                                        <div className="flex flex-col gap-6 font-mono text-lg">
+                                            {box.items.map((item, idx) => {
+                                                // XỬ LÝ LINK THÔNG MINH (HACKER STYLE)
+                                                let content;
+                                                const val = item.value;
+
+                                                if (val.includes('@')) {
+                                                    // 1. Email
+                                                    content = (
+                                                        <a href={`mailto:${val}`} className="text-[#00ff41] hover:bg-[#00ff41] hover:text-black transition-colors px-2 py-1 inline-block break-all">
+                                                            <span className="opacity-50 mr-2">[MAIL]:</span>{val}
+                                                        </a>
+                                                    );
+                                                } else if (val.startsWith('http')) {
+                                                    // 2. Link Web
+                                                    content = (
+                                                        <a href={val} target="_blank" rel="noopener noreferrer" className="text-[#00ff41] hover:underline decoration-dashed break-all px-2 py-1 inline-block">
+                                                            <span className="opacity-50 mr-2">[LINK]:</span>{val} ↗
+                                                        </a>
+                                                    );
+                                                } else if (val.match(/^[0-9+ ]+$/) && val.length > 8) {
+                                                    // 3. Số điện thoại
+                                                    content = (
+                                                        <a href={`tel:${val.replace(/\s/g, '')}`} className="text-[#00ff41] font-bold hover:bg-[#00ff41] hover:text-black px-2 py-1 inline-block transition-colors">
+                                                            <span className="opacity-50 mr-2">[CALL]:</span>{val}
+                                                        </a>
+                                                    );
+                                                } else {
+                                                    // 4. Text thường
+                                                    content = <span className="text-gray-300 px-2 py-1"><span className="text-[#00ff41] opacity-50 mr-2">&gt;</span>{val}</span>;
+                                                }
+
+                                                return (
+                                                    <div key={idx} className="flex flex-col sm:flex-row sm:justify-between sm:items-center border-b border-[#00ff41]/20 pb-4 last:border-0">
+                                                        <span className="text-gray-500 font-bold text-sm uppercase mb-2 sm:mb-0 min-w-[120px]">
+                                                            {item.label}_
+                                                        </span>
+                                                        <div className="text-right">
+                                                            {content}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : <NoDataDisplay section="CONTACT" />}
+                                ))}
+                            </div>
+                        ) : <NoDataDisplay section="CONTACT" />
+                    )}
                 </section>
             </>
         )}
