@@ -11,6 +11,7 @@ import TopNav from "@/components/TopNav";
 
 import { translations, Lang } from "@/lib/data"; 
 import { getAllPosts, getPostsByTag, getSectionContent } from "@/lib/actions"; 
+import AiChatBox from "@/components/AiChatBox";
 
 // --- TYPES ---
 type Post = { id: string; title: string; images: string; createdAt: Date | string; tag?: string; language?: string; content?: string; };
@@ -455,6 +456,7 @@ export default function Home() {
                 </section>
             </>
         )}
+        <AiChatBox />
     </main>
   );
 }
