@@ -267,9 +267,14 @@ export default function Home() {
                         )}
                         <p><span>{t.hero_iam}</span> <span ref={typeWriterRef} className="typewriter"></span></p>
                         <p className="description">{hero.description}</p>
+                        
+                        {/* [MỚI] THÊM NÚT FAQ VÀO ĐÂY */}
                         <div className="btn-group">
                             <a href="#projects" className="btn btn-primary">{t.btn_view_project}</a>
                             <a href="#contact" className="btn">{t.btn_contact}</a>
+                            <Link href="/faq" className="btn text-[#00ff41] border-[#00ff41] hover:bg-[#00ff41] hover:text-black">
+                                FAQ_HELP
+                            </Link>
                         </div>
                     </div>
                     <div className="hero-img-large">
