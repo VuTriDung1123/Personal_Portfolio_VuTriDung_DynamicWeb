@@ -18,36 +18,43 @@ export default function TopNav({ t, currentLang, setCurrentLang, resumeUrl }: To
   const pathname = usePathname();
   const finalResumeUrl = resumeUrl || "/files/resume.pdf";
 
+  // [CẬP NHẬT] Thêm 'faq' vào danh sách
   const navItems = [
     'home', 'about', 'profile', 'certificates', 'career', 
     'achievements', 'skills', 'experience', 'projects', 
-    'blog', 'gallery', 'contact'
+    'blog', 'gallery', 'faq', 'contact'
   ];
 
-  // Chia đôi menu
-  const row1 = navItems.slice(0, 6);
-  const row2 = navItems.slice(6, 12);
+  // Chia đôi menu (Cân đối lại số lượng)
+  const row1 = navItems.slice(0, 7); // 7 mục trên
+  const row2 = navItems.slice(7, 13); // 6 mục dưới
 
   // Component NavLink con
   const NavLink = ({ item }: { item: string }) => {
     let href = "";
     let label = "";
     
+    // [LOGIC MỚI] Xử lý link cho FAQ
     if (item === 'blog') { href = "/blog"; label = getNavText('nav_blog'); } 
+    else if (item === 'faq') { href = "/faq"; label = "FAQ / HELP"; } // Link sang trang FAQ
     else if (item === 'home') { href = "/"; label = getNavText('nav_home'); } 
     else {
         const keyMap: Record<string, string> = { certificates: 'cert', projects: 'proj', experience: 'exp' };
         label = getNavText(`nav_${keyMap[item] || item}`);
         href = pathname === "/" ? `#${item}` : `/#${item}`;
     }
-    const isActive = (item === 'home' && pathname === '/') || (item === 'blog' && pathname.includes('/blog'));
+    
+    // Active khi ở trang chủ (và hash khớp) HOẶC ở trang con tương ứng
+    const isActive = (item === 'home' && pathname === '/') || 
+                     (item === 'blog' && pathname.includes('/blog')) ||
+                     (item === 'faq' && pathname.includes('/faq'));
 
     return (
         <Link 
             href={href} 
             className={`
-                text-xs lg:text-sm font-bold font-mono uppercase tracking-wider transition-all duration-300 
-                hover:text-[#00ff41] hover:drop-shadow-[0_0_8px_#00ff41] px-3 py-1 rounded
+                text-[18px] lg:text-[20px] font-bold uppercase tracking-wide transition-all duration-300 
+                hover:text-[#00ff41] hover:drop-shadow-[0_0_5px_#00ff41] px-2 py-0.5 rounded
                 ${isActive ? 'text-[#00ff41] bg-[#00ff41]/10 border border-[#00ff41]' : 'text-gray-400 border border-transparent'}
             `}
         >
@@ -59,49 +66,54 @@ export default function TopNav({ t, currentLang, setCurrentLang, resumeUrl }: To
   return (
     <nav 
         id="navbar" 
-        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 lg:px-8 py-2 bg-black/95 backdrop-blur-md border-b border-[#00ff41]/50 shadow-[0_0_20px_rgba(0,255,65,0.15)] transition-all duration-300 min-h-[90px]"
+        className="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-4 lg:px-6 h-[90px] bg-black/95 border-b border-[#00ff41]/50 shadow-[0_0_15px_rgba(0,255,65,0.2)] transition-all duration-300"
     >
       {/* 1. TRÁI: Profile */}
-      <div className="flex items-center gap-4 shrink-0 w-[220px]">
-        <div className="relative w-12 h-12 lg:w-16 lg:h-16 overflow-hidden rounded-full border-2 border-[#00ff41] shadow-[0_0_15px_#00ff41] group cursor-pointer">
+      <div className="flex items-center gap-3 shrink-0 w-[220px]">
+        <div className="relative w-12 h-12 overflow-hidden rounded-full border-2 border-[#00ff41] shadow-[0_0_10px_#00ff41] group cursor-pointer">
           <Image src="/pictures/VuTriDung.jpg" alt="Vũ Trí Dũng" fill className="object-cover group-hover:scale-110 transition-transform duration-500" />
         </div>
         <div className="flex flex-col justify-center">
-          <span className="text-white font-bold text-lg lg:text-xl leading-none tracking-wide">Vũ Trí Dũng</span>
-          <span className="text-[#00ff41] text-xs font-mono mt-1 opacity-90 animate-pulse">&lt;Dev_Portfolio /&gt;</span>
+          <span className="text-white font-bold text-xl leading-none tracking-wide uppercase pb-1">Vũ Trí Dũng</span>
+          <span className="text-[#00ff41] text-sm mt-0.5 opacity-90 animate-pulse tracking-widest">&lt;Dev_Portfolio /&gt;</span>
         </div>
       </div>
 
       {/* 2. GIỮA: Menu 2 Tầng */}
-      <div className="flex-1 flex flex-col items-center justify-center gap-1.5 mx-4">
-          <div className="flex flex-wrap justify-center gap-3 lg:gap-6 w-full">
+      <div className="flex-1 flex flex-col items-center justify-center gap-1 mx-2 hidden lg:flex">
+          <div className="flex flex-wrap justify-center gap-2 lg:gap-4 w-full">
             {row1.map(item => <NavLink key={item} item={item} />)}
           </div>
-          <div className="flex flex-wrap justify-center gap-3 lg:gap-6 w-full border-t border-[#333] pt-1.5 mt-0.5">
+          <div className="flex flex-wrap justify-center gap-2 lg:gap-4 w-full border-t border-[#333] pt-1.5 mt-0.5">
             {row2.map(item => <NavLink key={item} item={item} />)}
           </div>
       </div>
+      
+      {/* Mobile Placeholder */}
+      <div className="lg:hidden flex-1 flex justify-center text-[#00ff41] text-lg animate-pulse tracking-widest">
+          [ SYSTEM_MENU ]
+      </div>
 
       {/* 3. PHẢI: Actions */}
-      <div className="flex items-center gap-3 shrink-0 w-auto justify-end">
+      <div className="flex items-center gap-2 shrink-0 w-auto justify-end">
         
-        {/* [MỚI] NÚT CHUYỂN SANG SAKURA VER (Màu Hồng) */}
+        {/* Nút Sakura */}
         <a 
             href="https://personal-portfolio-vu-tri-dung-saku.vercel.app" 
             target="_blank"
-            className="flex items-center justify-center h-11 px-3 border-2 border-[#ff69b4] text-[#ff69b4] font-bold text-xs lg:text-sm rounded hover:bg-[#ff69b4] hover:text-white hover:shadow-[0_0_15px_#ff69b4] transition-all duration-300"
+            className="flex items-center justify-center h-9 px-2 border border-[#ff69b4] text-[#ff69b4] font-bold text-sm rounded hover:bg-[#ff69b4] hover:text-white hover:shadow-[0_0_10px_#ff69b4] transition-all duration-300 tracking-wide"
         >
            🌸 SAKURA
         </a>
 
         {/* Nút Ngôn ngữ */}
-        <div className="flex bg-black border-2 border-[#333] rounded overflow-hidden h-11 shadow-lg">
+        <div className="flex bg-black border border-[#333] rounded overflow-hidden h-9 shadow-lg">
           {(['en', 'vi', 'jp'] as const).map(lang => (
             <button 
                 key={lang}
                 onClick={() => setCurrentLang(lang)} 
-                className={`w-10 lg:w-12 h-full flex items-center justify-center text-sm font-bold transition-all duration-300 hover:bg-[#222]
-                    ${currentLang === lang ? 'bg-[#00ff41] text-black shadow-[inset_0_0_15px_rgba(0,0,0,0.3)]' : 'text-gray-400 hover:text-white'}`}
+                className={`w-10 h-full flex items-center justify-center text-sm font-bold transition-all duration-300 hover:bg-[#222]
+                    ${currentLang === lang ? 'bg-[#00ff41] text-black' : 'text-gray-400 hover:text-white'}`}
             >
                 {lang.toUpperCase()}
             </button>
@@ -113,12 +125,9 @@ export default function TopNav({ t, currentLang, setCurrentLang, resumeUrl }: To
             href={finalResumeUrl} 
             target="_blank" 
             rel="noopener noreferrer"
-            className="flex items-center justify-center gap-2 h-11 px-4 bg-[#00ff41]/10 border-2 border-[#00ff41] text-[#00ff41] font-bold text-sm lg:text-base rounded hover:bg-[#00ff41] hover:text-black hover:shadow-[0_0_25px_#00ff41] transition-all duration-300 group"
+            className="flex items-center justify-center gap-1 h-9 px-3 bg-[#00ff41]/10 border border-[#00ff41] text-[#00ff41] font-bold text-lg rounded hover:bg-[#00ff41] hover:text-black hover:shadow-[0_0_15px_#00ff41] transition-all duration-300 group tracking-wide"
         >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 lg:h-6 lg:w-6 group-hover:animate-bounce" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-            </svg>
-            <span className="hidden lg:inline leading-none pt-[1px]">{t.btn_resume || "CV"}</span>
+            <span className="leading-none pt-[3px]">{t.btn_resume || "CV"}</span>
         </a>
 
       </div>
