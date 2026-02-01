@@ -456,7 +456,7 @@ export default function Home() {
                 </section>
             </>
         )}
-        <AiChatBox />
+        <AiChatBox currentLang={currentLang}/>
     </main>
   );
 }
