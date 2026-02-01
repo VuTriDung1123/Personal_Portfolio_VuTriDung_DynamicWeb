@@ -1,18 +1,29 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
+import { Lang } from "@/lib/data";
 
-export default function AiChatBox() {
+const GREETINGS = {
+    vi: "HỆ THỐNG ONLINE. Tôi là trợ lý AI của Dũng. Nhập lệnh để bắt đầu.",
+    en: "SYSTEM_ONLINE. I am Dung's AI Assistant. Ready for queries.",
+    jp: "システム・オンライン。AIアシスタントです。コマンドを入力してください。"
+};
+
+// [MỚI] Nhận props currentLang
+export default function AiChatBox({ currentLang }: { currentLang: Lang }) {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState("");
-  // Tin nhắn chào mừng mặc định
   const [messages, setMessages] = useState<{ role: 'user' | 'ai', content: string }[]>([
-    { role: 'ai', content: "SYSTEM_ONLINE. I am Dũng's AI Assistant. How can I help you?" }
+    { role: 'ai', content: GREETINGS[currentLang] || GREETINGS.en }
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // Tự động cuộn xuống
+  // [MỚI] Thông báo khi đổi ngôn ngữ
+  useEffect(() => {
+    setMessages(prev => [...prev, { role: 'ai', content: `[SYSTEM_LOG]: LANGUAGE_SWITCHED_TO_[${currentLang.toUpperCase()}]` }]);
+  }, [currentLang]);
+
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [messages, isOpen]);
@@ -22,24 +33,20 @@ export default function AiChatBox() {
 
     const userMsg = input;
     setInput("");
-    
-    // Thêm tin nhắn user vào list
     setMessages(prev => [...prev, { role: 'user', content: userMsg }]);
     setIsLoading(true);
 
     try {
-      // Gọi API Gemini
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
-            messages: [...messages, { role: 'user', content: userMsg }]
+            messages: [...messages, { role: 'user', content: userMsg }],
+            language: currentLang // [MỚI] Gửi kèm ngôn ngữ
         })
       });
 
       const data = await res.json();
-      
-      // Thêm tin nhắn AI trả lời
       setMessages(prev => [...prev, { role: 'ai', content: data.reply }]);
     } catch (error) {
         console.error(error);
@@ -51,8 +58,6 @@ export default function AiChatBox() {
 
   return (
     <div style={{ position: 'fixed', bottom: '20px', right: '20px', zIndex: 9999, fontFamily: "'VT323', monospace" }}>
-      
-      {/* Nút bật/tắt Chat (Style Hacker) */}
       {!isOpen && (
         <button 
           onClick={() => setIsOpen(true)}
@@ -69,17 +74,13 @@ export default function AiChatBox() {
         </button>
       )}
 
-      {/* Cửa sổ Chat */}
       {isOpen && (
         <div style={{
           width: '320px', height: '450px', 
-          background: 'rgba(0, 10, 0, 0.95)', 
-          border: '1px solid #00ff41',
-          display: 'flex', flexDirection: 'column', 
-          boxShadow: '0 0 30px rgba(0,255,65,0.2)',
+          background: 'rgba(0, 10, 0, 0.95)', border: '1px solid #00ff41',
+          display: 'flex', flexDirection: 'column', boxShadow: '0 0 30px rgba(0,255,65,0.2)',
           borderRadius: '5px', overflow: 'hidden'
         }}>
-          {/* Header */}
           <div style={{
             background: '#00ff41', color: 'black', padding: '10px', fontWeight: 'bold',
             display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -87,12 +88,11 @@ export default function AiChatBox() {
           }}>
             <div style={{display:'flex', alignItems:'center', gap:'5px'}}>
                 <span style={{width:'8px', height:'8px', background:'black', borderRadius:'50%', animation:'pulse 1s infinite'}}></span>
-                <span>AI_SECRETARY</span>
+                <span>AI_SECRETARY [{currentLang.toUpperCase()}]</span>
             </div>
             <button onClick={() => setIsOpen(false)} style={{background:'none', border:'none', fontWeight:'bold', cursor:'pointer', fontSize:'1.2rem'}}>&times;</button>
           </div>
 
-          {/* Body Chat */}
           <div ref={scrollRef} style={{flex: 1, padding: '15px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '15px'}}>
             {messages.map((m, i) => (
               <div key={i} style={{
@@ -109,14 +109,9 @@ export default function AiChatBox() {
                 {m.content}
               </div>
             ))}
-            {isLoading && (
-                <div style={{alignSelf: 'flex-start', color: '#00ff41', fontSize: '0.9rem'}}>
-                    Thinking<span className="cursor-blink">_</span>
-                </div>
-            )}
+            {isLoading && <div style={{alignSelf: 'flex-start', color: '#00ff41', fontSize: '0.9rem'}}>Processing data...<span className="cursor-blink">_</span></div>}
           </div>
 
-          {/* Input Area */}
           <div style={{padding: '10px', borderTop: '1px solid #00ff41', display: 'flex', background:'black'}}>
             <input 
               value={input}
