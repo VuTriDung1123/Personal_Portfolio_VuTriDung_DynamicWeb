@@ -42,7 +42,8 @@ export default function AiChatBox({ currentLang }: { currentLang: Lang }) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
             messages: [...messages, { role: 'user', content: userMsg }],
-            language: currentLang // [MỚI] Gửi kèm ngôn ngữ
+            language: currentLang, // [MỚI] Gửi kèm ngôn ngữ
+            theme: 'hacker'
         })
       });
 
