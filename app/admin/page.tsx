@@ -71,7 +71,7 @@ const ExpEditor = ({ lang, data, onUpdate }: { lang: string, data: ExpGroup[], o
     const addGroup = () => onUpdate([...data, { id: Date.now().toString(), title: "New Category", items: [] }]);
     const updateTitle = (idx: number, v: string) => { const n = [...data]; n[idx].title = v; onUpdate(n); };
     const addItem = (gIdx: number) => { const n = [...data]; n[gIdx].items.push({ id: Date.now().toString(), time: "", role: "", details: [] }); onUpdate(n); };
-    const updateItem = (gIdx: number, iIdx: number, f: keyof ExpItem, v: string) => { const n = [...data]; (n[gIdx].items[iIdx] as any)[f] = v; onUpdate(n); };
+    const updateItem = (gIdx: number, iIdx: number, f: keyof ExpItem, v: string) => { const n = [...data]; const item = n[gIdx].items[iIdx]; if (f === 'time' || f === 'role') { item[f] = v; } else if (f === 'id') { item[f] = v; } else if (f === 'details') { item[f] = v.split('\n'); } onUpdate(n); };
     const updateDetails = (gIdx: number, iIdx: number, txt: string) => { const n = [...data]; n[gIdx].items[iIdx].details = txt.split('\n'); onUpdate(n); };
     const remove = (idx: number) => { const n = [...data]; n.splice(idx, 1); onUpdate(n); };
     const removeItem = (gIdx: number, iIdx: number) => { const n = [...data]; n[gIdx].items.splice(iIdx, 1); onUpdate(n); };
